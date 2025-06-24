@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+pydantic
+sqlalchemy
+databases
+asyncpg
+httpx
+pytest
+pytest-asyncio
+mypy
+black
+isort

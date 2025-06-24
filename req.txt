@@ -1,0 +1,2 @@
+npx shadcn@latest add https://ui.aceternity.com/registry/moving-border.json
+npm i react-icons
