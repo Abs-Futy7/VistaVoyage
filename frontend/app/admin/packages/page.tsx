@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -35,6 +36,7 @@ const isValidUUID = (uuid: string) => {
 };
 
 export default function AdminPackagesPage() {
+  const router = useRouter();
   const {
     packages,
     loading,
@@ -443,8 +445,17 @@ export default function AdminPackagesPage() {
           <Package className="h-6 w-6" />
           <h1 className="text-3xl font-bold">Package Management</h1>
         </div>
-        <div className="text-sm text-gray-600">
-          Total: {pagination.total} packages
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-600">
+            Total: {pagination.total} packages
+          </div>
+          <Button
+            onClick={() => router.push('/admin/packages/create')}
+            className="flex items-center gap-2"
+          >
+            <PlusCircle className="h-4 w-4" />
+            Create New Package
+          </Button>
         </div>
       </div>
 
@@ -634,9 +645,19 @@ export default function AdminPackagesPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleEditPackage(pkg)}
+                    onClick={() => router.push(`/admin/packages/${pkg.id}`)}
                     disabled={actionLoading === pkg.id}
                     className="flex-1"
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    Details
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push(`/admin/packages/edit/${pkg.id}`)}
+                    disabled={actionLoading === pkg.id}
                   >
                     <Edit className="h-4 w-4 mr-1" />
                     Edit

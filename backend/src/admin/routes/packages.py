@@ -1,13 +1,15 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from fastapi.responses import Response
-from typing import Optional
+from typing import Optional, List
 from sqlmodel.ext.asyncio.session import AsyncSession
 import uuid as uuid_module
 from datetime import datetime
+import json
 
 from ...db.main import get_session
 from ...services.package_service import package_service
-from ...schemas.package_schemas import PackageCreateModel, PackageUpdateModel, PackageListResponseModel
+from ...schemas.package_schemas import PackageCreateModel, PackageUpdateModel, PackageListResponseModel, PackageDetailResponseModel
+from ...models.package import Package
 from ..dependencies import admin_access_bearer
 
 packages_router = APIRouter()
@@ -95,20 +97,35 @@ async def create_package(
     trip_type_id: str = Form(...),
     offer_id: Optional[str] = Form(None),
     featured_image: Optional[UploadFile] = File(None),
+    gallery_images: Optional[List[UploadFile]] = File(None),
     is_featured: bool = Form(False),
     is_active: bool = Form(True),
+    
+    # Detailed content fields
+    highlights: Optional[str] = Form(None),
+    itinerary: Optional[str] = Form(None),
+    inclusions: Optional[str] = Form(None),
+    exclusions: Optional[str] = Form(None),
+    terms_conditions: Optional[str] = Form(None),
+    max_group_size: Optional[int] = Form(None),
+    min_age: Optional[int] = Form(None),
+    difficulty_level: Optional[str] = Form(None),
+    available_from: Optional[str] = Form(None),
+    available_until: Optional[str] = Form(None),
+    
     session: AsyncSession = Depends(get_session),
     token_data: dict = Depends(admin_access_bearer)
 ):
     """Create a new package"""
     try:
         featured_image_url = None
+        gallery_image_urls = []
         
-        # Handle image upload if provided
+        # Handle featured image upload if provided
         if featured_image and featured_image.filename:
             # Validate file type
             if not featured_image.content_type or not featured_image.content_type.startswith('image/'):
-                raise HTTPException(status_code=400, detail="File must be an image")
+                raise HTTPException(status_code=400, detail="Featured image must be an image")
             
             try:
                 # Use Supabase service for image upload
@@ -116,8 +133,50 @@ async def create_package(
                 featured_image_url = await supabase_service.upload_package_image(featured_image)
             except Exception as upload_error:
                 # Log the error but don't fail the entire operation
-                print(f"Image upload failed: {upload_error}")
+                print(f"Featured image upload failed: {upload_error}")
                 featured_image_url = None
+        
+        # Handle gallery images upload if provided
+        if gallery_images:
+            print(f"Processing {len(gallery_images)} gallery images")
+            for i, gallery_image in enumerate(gallery_images):
+                if gallery_image and gallery_image.filename:
+                    print(f"Processing gallery image {i}: {gallery_image.filename}")
+                    # Validate file type
+                    if not gallery_image.content_type or not gallery_image.content_type.startswith('image/'):
+                        print(f"Skipping non-image file: {gallery_image.filename}")
+                        continue
+                    
+                    try:
+                        # Use Supabase service for image upload
+                        from ...services.supabase_service import supabase_service
+                        gallery_url = await supabase_service.upload_package_image(gallery_image)
+                        gallery_image_urls.append(gallery_url)
+                        print(f"Successfully uploaded gallery image {i}: {gallery_url}")
+                    except Exception as upload_error:
+                        # Log the error but continue with other images
+                        print(f"Gallery image upload failed: {upload_error}")
+                        continue
+        
+        print(f"Final gallery_image_urls: {gallery_image_urls}")
+        
+        # Parse datetime fields if provided
+        available_from_dt = None
+        available_until_dt = None
+        
+        if available_from:
+            try:
+                from datetime import datetime
+                available_from_dt = datetime.fromisoformat(available_from.replace('Z', '+00:00'))
+            except ValueError:
+                pass
+        
+        if available_until:
+            try:
+                from datetime import datetime
+                available_until_dt = datetime.fromisoformat(available_until.replace('Z', '+00:00'))
+            except ValueError:
+                pass
         
         # Convert form data to Pydantic model
         package_data = PackageCreateModel(
@@ -131,7 +190,20 @@ async def create_package(
             offer_id=uuid_module.UUID(offer_id) if offer_id else None,
             featured_image=featured_image_url,
             is_featured=is_featured,
-            is_active=is_active
+            is_active=is_active,
+            
+            # Detailed content fields
+            highlights=highlights,
+            itinerary=itinerary,
+            inclusions=inclusions,
+            exclusions=exclusions,
+            terms_conditions=terms_conditions,
+            image_gallery=gallery_image_urls if gallery_image_urls else None,
+            max_group_size=max_group_size,
+            min_age=min_age,
+            difficulty_level=difficulty_level,
+            available_from=available_from_dt,
+            available_until=available_until_dt
         )
         
         new_package = await package_service.create_package(session, package_data)
@@ -155,8 +227,22 @@ async def update_package(
     trip_type_id: Optional[str] = Form(None),
     offer_id: Optional[str] = Form(None),
     featured_image: Optional[UploadFile] = File(None),
+    gallery_images: Optional[List[UploadFile]] = File(None),
     is_featured: Optional[bool] = Form(None),
     is_active: Optional[bool] = Form(None),
+    
+    # Detailed content fields
+    highlights: Optional[str] = Form(None),
+    itinerary: Optional[str] = Form(None),
+    inclusions: Optional[str] = Form(None),
+    exclusions: Optional[str] = Form(None),
+    terms_conditions: Optional[str] = Form(None),
+    max_group_size: Optional[int] = Form(None),
+    min_age: Optional[int] = Form(None),
+    difficulty_level: Optional[str] = Form(None),
+    available_from: Optional[str] = Form(None),
+    available_until: Optional[str] = Form(None),
+    
     session: AsyncSession = Depends(get_session),
     token_data: dict = Depends(admin_access_bearer)
 ):
@@ -168,12 +254,13 @@ async def update_package(
             raise HTTPException(status_code=404, detail="Package not found")
         
         featured_image_url = existing_package.featured_image  # Keep existing image by default
+        gallery_image_urls = existing_package.image_gallery or []  # Keep existing gallery
         
-        # Handle image upload if provided
+        # Handle featured image upload if provided
         if featured_image and featured_image.filename:
             # Validate file type
             if not featured_image.content_type or not featured_image.content_type.startswith('image/'):
-                raise HTTPException(status_code=400, detail="File must be an image")
+                raise HTTPException(status_code=400, detail="Featured image must be an image")
             
             try:
                 # Use Supabase service for image upload
@@ -181,8 +268,35 @@ async def update_package(
                 featured_image_url = await supabase_service.upload_package_image(featured_image)
             except Exception as upload_error:
                 # Log the error but don't fail the entire operation
-                print(f"Image upload failed: {upload_error}")
+                print(f"Featured image upload failed: {upload_error}")
                 featured_image_url = existing_package.featured_image  # Keep existing
+        
+        # Handle gallery images upload if provided
+        if gallery_images:
+            print(f"Processing {len(gallery_images)} gallery images for update")
+            # If new gallery images are provided, replace the existing ones
+            gallery_image_urls = []
+            for i, gallery_image in enumerate(gallery_images):
+                if gallery_image and gallery_image.filename:
+                    print(f"Processing gallery image {i}: {gallery_image.filename}")
+                    # Validate file type
+                    if not gallery_image.content_type or not gallery_image.content_type.startswith('image/'):
+                        print(f"Skipping non-image file: {gallery_image.filename}")
+                        continue
+                    
+                    try:
+                        # Use Supabase service for image upload
+                        from ...services.supabase_service import supabase_service
+                        gallery_url = await supabase_service.upload_package_image(gallery_image)
+                        gallery_image_urls.append(gallery_url)
+                        print(f"Successfully uploaded gallery image {i}: {gallery_url}")
+                    except Exception as upload_error:
+                        # Log the error but continue with other images
+                        print(f"Gallery image upload failed: {upload_error}")
+                        continue
+            print(f"Final gallery_image_urls for update: {gallery_image_urls}")
+        else:
+            print("No gallery images provided for update")
         
         # Build update data dictionary, only including provided fields
         update_data = PackageUpdateModel()
@@ -208,6 +322,40 @@ async def update_package(
             update_data.is_featured = is_featured
         if is_active is not None:
             update_data.is_active = is_active
+        
+        # Handle detailed content fields
+        if highlights is not None:
+            update_data.highlights = highlights
+        if itinerary is not None:
+            update_data.itinerary = itinerary
+        if inclusions is not None:
+            update_data.inclusions = inclusions
+        if exclusions is not None:
+            update_data.exclusions = exclusions
+        if terms_conditions is not None:
+            update_data.terms_conditions = terms_conditions
+        # Update gallery images if new ones were uploaded
+        if gallery_images is not None:
+            update_data.image_gallery = gallery_image_urls
+            print(f"Setting image_gallery in update_data: {gallery_image_urls}")
+        if max_group_size is not None:
+            update_data.max_group_size = max_group_size
+        if min_age is not None:
+            update_data.min_age = min_age
+        if difficulty_level is not None:
+            update_data.difficulty_level = difficulty_level
+        if available_from is not None:
+            try:
+                update_data.available_from = datetime.fromisoformat(available_from.replace('Z', '+00:00'))
+            except ValueError:
+                # Try parsing as date only
+                update_data.available_from = datetime.strptime(available_from, '%Y-%m-%d')
+        if available_until is not None:
+            try:
+                update_data.available_until = datetime.fromisoformat(available_until.replace('Z', '+00:00'))
+            except ValueError:
+                # Try parsing as date only
+                update_data.available_until = datetime.strptime(available_until, '%Y-%m-%d')
         
         updated_package = await package_service.update_package(
             session=session,
@@ -329,6 +477,58 @@ async def upload_package_image_to_existing(
         )
         
         return {"image_url": image_url}
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=str(e))
+
+@packages_router.get("/packages/{package_id}/details", response_model=PackageDetailResponseModel)
+async def get_package_details(
+    package_id: str,
+    session: AsyncSession = Depends(get_session),
+    token_data: dict = Depends(admin_access_bearer)
+):
+    """Get detailed package information with relationships"""
+    try:
+        from sqlmodel import select
+        from ...models.destination import Destination
+        from ...models.trip_type import TripType
+        from ...models.offer import Offer
+        from ...schemas.package_schemas import PackageDetailResponseModel
+        
+        # Get package with relationships
+        statement = select(Package).where(Package.id == package_id)
+        result = await session.exec(statement)
+        package = result.first()
+        
+        if not package:
+            raise HTTPException(status_code=404, detail="Package not found")
+        
+        # Get related data
+        dest_statement = select(Destination).where(Destination.id == package.destination_id)
+        dest_result = await session.exec(dest_statement)
+        destination = dest_result.first()
+        
+        trip_statement = select(TripType).where(TripType.id == package.trip_type_id)
+        trip_result = await session.exec(trip_statement)
+        trip_type = trip_result.first()
+        
+        offer = None
+        if package.offer_id:
+            offer_statement = select(Offer).where(Offer.id == package.offer_id)
+            offer_result = await session.exec(offer_statement)
+            offer = offer_result.first()
+        
+        # Build detailed response
+        package_dict = {
+            **package.model_dump(),
+            "destination_name": destination.name if destination else None,
+            "trip_type_name": trip_type.name if trip_type else None,
+            "offer_title": offer.title if offer else None
+        }
+        
+        return PackageDetailResponseModel(**package_dict)
+        
     except Exception as e:
         if isinstance(e, HTTPException):
             raise e

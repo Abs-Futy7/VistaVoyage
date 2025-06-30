@@ -141,6 +141,95 @@ class Package(SQLModel, table=True):
         )
     )
     
+    # Additional content fields for detailed package information
+    highlights: Optional[str] = Field(
+        default=None,
+        sa_column=Column(
+            pg.TEXT,
+            nullable=True
+        )
+    )
+    
+    itinerary: Optional[str] = Field(
+        default=None,
+        sa_column=Column(
+            pg.TEXT,
+            nullable=True
+        )
+    )
+    
+    inclusions: Optional[str] = Field(
+        default=None,
+        sa_column=Column(
+            pg.TEXT,
+            nullable=True
+        )
+    )
+    
+    exclusions: Optional[str] = Field(
+        default=None,
+        sa_column=Column(
+            pg.TEXT,
+            nullable=True
+        )
+    )
+    
+    terms_conditions: Optional[str] = Field(
+        default=None,
+        sa_column=Column(
+            pg.TEXT,
+            nullable=True
+        )
+    )
+    
+    image_gallery: Optional[List[str]] = Field(
+        default=None,
+        sa_column=Column(
+            pg.JSON,  # JSON array of image URLs
+            nullable=True
+        )
+    )
+    
+    max_group_size: Optional[int] = Field(
+        default=None,
+        sa_column=Column(
+            pg.INTEGER,
+            nullable=True
+        )
+    )
+    
+    min_age: Optional[int] = Field(
+        default=None,
+        sa_column=Column(
+            pg.INTEGER,
+            nullable=True
+        )
+    )
+    
+    difficulty_level: Optional[PackageDifficulty] = Field(
+        default=None,
+        sa_column=Column(
+            pg.VARCHAR(50),
+            nullable=True
+        )
+    )
+    
+    available_from: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(
+            pg.TIMESTAMP,
+            nullable=True
+        )
+    )
+    
+    available_until: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(
+            pg.TIMESTAMP,
+            nullable=True
+        )
+    )
+
     # Relationships
     destination: "Destination" = Relationship(back_populates="packages")
     trip_type: "TripType" = Relationship(back_populates="packages")

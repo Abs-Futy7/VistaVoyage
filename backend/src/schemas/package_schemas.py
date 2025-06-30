@@ -16,6 +16,13 @@ class PackageCategoryEnum(str, Enum):
     WILDLIFE = "Wildlife"
 
 
+class PackageDifficultyEnum(str, Enum):
+    EASY = "easy"
+    MODERATE = "moderate"
+    CHALLENGING = "challenging"
+    EXPERT = "expert"
+
+
  
 
 class PackageCreateModel(BaseModel):
@@ -30,6 +37,19 @@ class PackageCreateModel(BaseModel):
     featured_image: Optional[str] = None
     is_featured: bool = False
     is_active: bool = True
+    
+    # Detailed content fields
+    highlights: Optional[str] = None
+    itinerary: Optional[str] = None
+    inclusions: Optional[str] = None
+    exclusions: Optional[str] = None
+    terms_conditions: Optional[str] = None
+    image_gallery: Optional[List[str]] = None  # JSON array of image URLs
+    max_group_size: Optional[int] = Field(None, gt=0)
+    min_age: Optional[int] = Field(None, ge=0)
+    difficulty_level: Optional[PackageDifficultyEnum] = None
+    available_from: Optional[datetime] = None
+    available_until: Optional[datetime] = None
 
 
 class PackageUpdateModel(BaseModel):
@@ -44,6 +64,19 @@ class PackageUpdateModel(BaseModel):
     featured_image: Optional[str] = None
     is_featured: Optional[bool] = None
     is_active: Optional[bool] = None
+    
+    # Detailed content fields
+    highlights: Optional[str] = None
+    itinerary: Optional[str] = None
+    inclusions: Optional[str] = None
+    exclusions: Optional[str] = None
+    terms_conditions: Optional[str] = None
+    image_gallery: Optional[List[str]] = None
+    max_group_size: Optional[int] = Field(None, gt=0)
+    min_age: Optional[int] = Field(None, ge=0)
+    difficulty_level: Optional[PackageDifficultyEnum] = None
+    available_from: Optional[datetime] = None
+    available_until: Optional[datetime] = None
 
 
 class PackageResponseModel(BaseModel):
@@ -62,6 +95,19 @@ class PackageResponseModel(BaseModel):
     created_at: datetime
     updated_at: datetime
     
+    # Detailed content fields
+    highlights: Optional[str] = None
+    itinerary: Optional[str] = None
+    inclusions: Optional[str] = None
+    exclusions: Optional[str] = None
+    terms_conditions: Optional[str] = None
+    image_gallery: Optional[List[str]] = None
+    max_group_size: Optional[int] = None
+    min_age: Optional[int] = None
+    difficulty_level: Optional[PackageDifficultyEnum] = None
+    available_from: Optional[datetime] = None
+    available_until: Optional[datetime] = None
+    
     class Config:
         from_attributes = True
 
@@ -75,8 +121,10 @@ class PackageListResponseModel(BaseModel):
 
 
 class PackageDetailResponseModel(PackageResponseModel):
-    """Detailed package response with additional information"""
-    # This will include the full package data plus any relationships loaded
-    pass
+    """Detailed package response with additional relationship data"""
+    # Add relationship data when needed
+    destination_name: Optional[str] = None
+    trip_type_name: Optional[str] = None
+    offer_title: Optional[str] = None
 
 

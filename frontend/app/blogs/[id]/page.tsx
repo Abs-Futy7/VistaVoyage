@@ -8,15 +8,16 @@ import { ArrowLeft, Calendar, Clock, User, Share2, Bookmark, MessageCircle, Glob
 import BlogCard from '@/components/BlogCard';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-function FullBlogPage({ params }: { params: { id: string } }) {
+function FullBlogPage({ params }: { params: Promise<{ id: string }> }) {
   const [blog, setBlog] = useState<any>(null);
   const [relatedBlogs, setRelatedBlogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showShareOptions, setShowShareOptions] = useState(false);
+  const resolvedParams = React.use(params);
 
   useEffect(() => {
     // Find the blog post with the matching ID
-    const foundBlog = mockBlogs.find(blog => blog.slug === params.id || blog.id === params.id);
+    const foundBlog = mockBlogs.find(blog => blog.slug === resolvedParams.id || blog.id === resolvedParams.id);
     if (foundBlog) {
       setBlog(foundBlog);
       
@@ -29,7 +30,7 @@ function FullBlogPage({ params }: { params: { id: string } }) {
       setRelatedBlogs(related);
     }
     setIsLoading(false);
-  }, [params.id]);
+  }, [resolvedParams.id]);
 
   if (isLoading) {
     return (

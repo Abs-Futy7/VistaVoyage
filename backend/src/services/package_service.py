@@ -108,9 +108,13 @@ class PackageService:
         
         # Update fields
         update_data = package_data.model_dump(exclude_unset=True, exclude_none=True)
+        print(f"Update data for package {package_id}: {update_data}")
         for field, value in update_data.items():
             if hasattr(package, field):
+                print(f"Setting {field} = {value}")
                 setattr(package, field, value)
+            else:
+                print(f"Package model doesn't have field: {field}")
         
         # Update timestamp
         package.updated_at = datetime.now()
