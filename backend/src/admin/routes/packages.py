@@ -68,7 +68,6 @@ async def get_packages(
     page: int = 1, 
     limit: int = 10, 
     search: Optional[str] = None,
-    category: Optional[str] = None,
     session: AsyncSession = Depends(get_session),
     token_data: dict = Depends(admin_access_bearer)
 ):
@@ -79,7 +78,6 @@ async def get_packages(
             page=page,
             limit=limit,
             search=search,
-            category=category,
             active_only=False  # Admin can see all packages
         )
         return result
