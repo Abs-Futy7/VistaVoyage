@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
+from fastapi.responses import Response
 from typing import Optional
 from sqlmodel.ext.asyncio.session import AsyncSession
 import uuid as uuid_module
@@ -10,6 +11,15 @@ from ...schemas.package_schemas import PackageCreateModel, PackageUpdateModel, P
 from ..dependencies import admin_access_bearer
 
 packages_router = APIRouter()
+
+# Add OPTIONS handler for CORS preflight requests
+@packages_router.options("/packages")
+async def packages_options():
+    return Response(status_code=200)
+
+@packages_router.options("/packages/{package_id}")
+async def package_options(package_id: str):
+    return Response(status_code=200)
 
 @packages_router.get("/packages/stats")
 async def get_packages_stats(

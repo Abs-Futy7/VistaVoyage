@@ -71,11 +71,11 @@ class AdminUserService:
         total_pages = (total + limit - 1) // limit
         
         return {
-            "data": user_data,
+            "users": user_data,
             "total": total,
             "page": page,
             "limit": limit,
-            "totalPages": total_pages
+            "total_pages": total_pages
         }
     
     async def get_user_by_id(self, session: AsyncSession, user_id: str) -> Optional[User]:

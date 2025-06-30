@@ -49,11 +49,11 @@ class BlogService:
         blogs = result.all()
         
         return {
-            "data": blogs,
+            "blogs": blogs,
             "total": total,
             "page": page,
             "limit": limit,
-            "totalPages": (total + limit - 1) // limit if total else 0
+            "total_pages": (total + limit - 1) // limit if total else 0
         }
     
     async def get_blog_by_id(self, session: AsyncSession, blog_id: str) -> Optional[Blog]:

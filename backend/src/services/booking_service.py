@@ -59,11 +59,11 @@ class BookingService:
         total_pages = (total + limit - 1) // limit
         
         return {
-            "data": [BookingResponseModel.model_validate(booking) for booking in bookings],
+            "bookings": [BookingResponseModel.model_validate(booking) for booking in bookings],
             "total": total,
             "page": page,
             "limit": limit,
-            "totalPages": total_pages
+            "total_pages": total_pages
         }
     
     async def get_booking_by_id(self, session: AsyncSession, booking_id: str) -> Optional[Booking]:

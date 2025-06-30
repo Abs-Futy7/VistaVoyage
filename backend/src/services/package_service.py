@@ -58,11 +58,11 @@ class PackageService:
         total_pages = (total + limit - 1) // limit
         
         return {
-            "data": [PackageResponseModel.model_validate(package) for package in packages],
+            "packages": [PackageResponseModel.model_validate(package) for package in packages],
             "total": total,
             "page": page,
             "limit": limit,
-            "totalPages": total_pages
+            "total_pages": total_pages
         }
     
     async def get_package_by_id(self, session: AsyncSession, package_id: str) -> Optional[Package]:

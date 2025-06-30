@@ -65,11 +65,11 @@ async def get_user_bookings(
         )
         
         return BookingListResponseModel(
-            bookings=result["data"],
+            bookings=result["bookings"],
             total=result["total"],
             page=result["page"],
             limit=result["limit"],
-            total_pages=result["totalPages"]
+            total_pages=result["total_pages"]
         )
         
     except Exception as e:

@@ -2,6 +2,7 @@
 Main admin routes module that combines all admin route files
 """
 from fastapi import APIRouter
+from fastapi.responses import Response
 
 # Import all route modules
 from .routes.dashboard import dashboard_router
@@ -25,6 +26,11 @@ except ImportError as e:
 
 # Create the main admin router
 admin_router = APIRouter()
+
+# Global OPTIONS handler for CORS preflight requests
+@admin_router.options("/{path:path}")
+async def admin_options_handler(path: str):
+    return Response(status_code=200)
 
 # Include all route modules
 admin_router.include_router(dashboard_router, tags=["Dashboard"])
