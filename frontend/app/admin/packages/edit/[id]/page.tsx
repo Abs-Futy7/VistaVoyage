@@ -31,7 +31,16 @@ export default function EditPackagePage({ params }: EditPackagePageProps) {
     try {
       setLoading(true);
       const data = await adminService.getPackageById(resolvedParams.id);
-      setPackageData(data);
+      // Convert date fields to Date objects if present and valid, else null
+      const parseDate = (val: any) => {
+        if (!val || typeof val !== 'string' || val.trim() === '') return null;
+        const d = new Date(val);
+        return isNaN(d.getTime()) ? null : d;
+      };
+    const processedData = {
+      ...data,
+    };
+      setPackageData(processedData);
     } catch (error: any) {
       console.error('Failed to fetch package data:', error);
       toast.error('Failed to load package data', {

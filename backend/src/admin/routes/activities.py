@@ -367,5 +367,27 @@ async def get_difficulty_levels(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching difficulty levels: {str(e)}")
-    
-        
+
+
+@activities_router.get("/activities/{activity_id}/details")
+async def get_activity_details(
+    activity_id: str,
+    session: AsyncSession = Depends(get_session),
+    token_data: dict = Depends(admin_access_bearer)
+):
+    """Get detailed activity information with statistics"""
+    try:
+        activity_uuid = validate_uuid(activity_id, "activity ID")
+        query = select(Activity).where(Activity.id == activity_uuid)
+        result = await session.exec(query)
+        activity = result.first()
+        if not activity:
+            raise HTTPException(status_code=404, detail="Activity not found")
+
+        # Example: Add more stats here if needed
+        # For now, just return all activity fields
+        return activity.model_dump() if hasattr(activity, 'model_dump') else activity.dict()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching activity details: {str(e)}")
+
+

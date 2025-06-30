@@ -27,8 +27,10 @@ import { AdminForm } from '@/components/ui/admin-form';
 import { AdminActivity } from '@/lib/api/services/admin';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useRouter } from 'next/navigation';
 
 export default function AdminActivitiesPage() {
+  const router = useRouter();
   const {
     activities,
     loading,
@@ -505,6 +507,16 @@ export default function AdminActivitiesPage() {
                     ) : (
                       <Trash2 className="h-4 w-4" />
                     )}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push(`/admin/activities/${activity.id}`)}
+                    className="flex-1"
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    View Details
                   </Button>
                 </div>
               </div>

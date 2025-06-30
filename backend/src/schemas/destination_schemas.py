@@ -43,6 +43,28 @@ class DestinationResponseModel(BaseModel):
         from_attributes = True
 
 
+class DestinationDetailResponseModel(BaseModel):
+    id: uuid.UUID
+    name: str
+    description: Optional[str] = None
+    country: str
+    city: str
+    best_time_to_visit: Optional[str] = None
+    timezone: Optional[str] = None
+    featured_image: Optional[str] = None
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    
+    # Additional details
+    total_packages: int = 0
+    active_packages: int = 0
+    featured_packages: int = 0
+    
+    class Config:
+        from_attributes = True
+
+
 class DestinationListResponseModel(BaseModel):
     destinations: List[DestinationResponseModel]
     total: int

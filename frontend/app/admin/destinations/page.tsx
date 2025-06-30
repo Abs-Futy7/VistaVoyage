@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 export default function AdminDestinationsPage() {
+  const router = useRouter();
   const {
     destinations,
     loading,
@@ -247,6 +249,10 @@ export default function AdminDestinationsPage() {
       is_active: destination.is_active
     });
     setIsEditDialogOpen(true);
+  };
+
+  const handleViewDetails = (destinationId: string) => {
+    router.push(`/admin/destinations/${destinationId}`);
   };
 
   const copyDestinationId = async (destinationId: string) => {
@@ -492,6 +498,16 @@ export default function AdminDestinationsPage() {
                     ) : (
                       <Trash2 className="h-4 w-4" />
                     )}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewDetails(destination.id)}
+                    className="flex-1"
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    View Details
                   </Button>
                 </div>
               </div>

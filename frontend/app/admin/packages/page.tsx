@@ -381,6 +381,7 @@ export default function AdminPackagesPage() {
   };
 
   const handleEditPackage = (pkg: AdminPackage) => {
+    console.log('Editing package keys:', Object.keys(pkg));
     setEditingPackage(pkg);
     setEditFormData({
       title: pkg.title,

@@ -9,6 +9,8 @@ from sqlmodel import select, func
 
 from ...db.main import get_session
 from ...models.destination import Destination
+from ...models.package import Package
+from ...schemas.destination_schemas import DestinationDetailResponseModel
 from ..dependencies import admin_access_bearer
 from .utils import validate_uuid
 
@@ -196,6 +198,85 @@ async def delete_destination(
         return {"message": "Destination deleted successfully"}
     except Exception as e:
         await session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@destinations_router.get("/destinations/{destination_id}")
+async def get_destination(
+    destination_id: str,
+    session: AsyncSession = Depends(get_session),
+    token_data: dict = Depends(admin_access_bearer)
+):
+    """Get a single destination by ID"""
+    try:
+        # Validate destination_id format
+        destination_uuid = validate_uuid(destination_id, "destination ID")
+        
+        query = select(Destination).where(Destination.id == destination_uuid)
+        result = await session.exec(query)
+        destination = result.first()
+        
+        if not destination:
+            raise HTTPException(status_code=404, detail="Destination not found")
+        
+        return destination
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@destinations_router.get("/destinations/{destination_id}/details", response_model=DestinationDetailResponseModel)
+async def get_destination_details(
+    destination_id: str,
+    session: AsyncSession = Depends(get_session),
+    token_data: dict = Depends(admin_access_bearer)
+):
+    """Get detailed destination information with package statistics"""
+    try:
+        # Validate destination_id format
+        destination_uuid = validate_uuid(destination_id, "destination ID")
+        
+        # Get destination
+        dest_query = select(Destination).where(Destination.id == destination_uuid)
+        dest_result = await session.exec(dest_query)
+        destination = dest_result.first()
+        
+        if not destination:
+            raise HTTPException(status_code=404, detail="Destination not found")
+        
+        # Get package statistics for this destination
+        total_packages_query = select(func.count(Package.id)).where(Package.destination_id == destination_uuid)
+        total_packages_result = await session.exec(total_packages_query)
+        total_packages = total_packages_result.first() or 0
+        
+        active_packages_query = select(func.count(Package.id)).where(
+            Package.destination_id == destination_uuid,
+            Package.is_active == True
+        )
+        active_packages_result = await session.exec(active_packages_query)
+        active_packages = active_packages_result.first() or 0
+        
+        featured_packages_query = select(func.count(Package.id)).where(
+            Package.destination_id == destination_uuid,
+            Package.is_featured == True
+        )
+        featured_packages_result = await session.exec(featured_packages_query)
+        featured_packages = featured_packages_result.first() or 0
+        
+        # Build detailed response
+        destination_dict = {
+            **destination.model_dump(),
+            "total_packages": total_packages,
+            "active_packages": active_packages,
+            "featured_packages": featured_packages
+        }
+        
+        return DestinationDetailResponseModel(**destination_dict)
+        
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
         raise HTTPException(status_code=500, detail=str(e))
 
 
