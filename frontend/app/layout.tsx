@@ -31,7 +31,7 @@ export default function RootLayout({
   // Server Component - can't use hooks directly
   return (
     <html lang="en" className={`${inter.variable} ${bebasNeue.variable}`}>
-      <body className="font-[Inter]">
+      <body className="font-[Inter]" suppressHydrationWarning>
         <ClientLayout>{children}</ClientLayout>
       </body>
     </html>

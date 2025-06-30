@@ -1,116 +1,295 @@
-import React from 'react'
+"use client";
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, PlusCircle } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Search, UserCheck, UserX, Trash2, Mail, MapPin, Calendar } from 'lucide-react';
+import { useAdminUsers } from '@/hooks/useAdmin';
+import { AdminUser } from '@/lib/api/services/admin';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
+export default function AdminUserManagePage() {
+  const { users, loading, error, deleteUser, toggleUserStatus, fetchUsers, pagination } = useAdminUsers();
+  const [searchQuery, setSearchQuery] = useState('');
 
-function AdminUserManagePage() {
-    // Sample data for users
-const users = [
-  {
-    id: "USR-001",
-    name: "Marks Hoverson",
-    email: "marks.h@example.com",
-    joined: "12 May 2025",
-    bookings: 5,
-    status: "Active"
-  },
-  {
-    id: "USR-002",
-    name: "Sarah Johnson",
-    email: "sarah.j@example.com",
-    joined: "03 Jun 2025",
-    bookings: 2,
-    status: "Active"
-  },
-  {
-    id: "USR-003",
-    name: "Michael Chen",
-    email: "michael.c@example.com",
-    joined: "17 Jun 2025",
-    bookings: 0,
-    status: "New"
-  }
-];
-  return (
-    <div>
-     {/* Users Tab */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold">User Management</h2>
-              <p className="text-gray-500 mb-4">Manage user accounts and permissions</p>
-            </div>
-            <div className="flex space-x-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <Input placeholder="Search users..." className="pl-10 w-64" />
-              </div>
-              <button className="flex items-center text-sm bg-blue-600 hover:text-blue-700 text-white px-4 py-2 rounded-md transition-colors">
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Add User
-              </button>
-            </div>
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    fetchUsers(1, pagination.limit, query);
+  };
+
+  const handleToggleStatus = async (userId: string) => {
+    if (confirm('Are you sure you want to toggle this user\'s status?')) {
+      await toggleUserStatus(userId);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
+      await deleteUser(userId);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold">User Management</h2>
+            <p className="text-gray-500">Manage registered users and their accounts</p>
           </div>
-          
-          <Card className="border-none shadow-sm">
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-left text-xs text-gray-500 border-b border-gray-200">
-                      <th className="pb-3 pt-4 pl-6">User</th>
-                      <th className="pb-3 pt-4">Email</th>
-                      <th className="pb-3 pt-4">Joined</th>
-                      <th className="pb-3 pt-4">Bookings</th>
-                      <th className="pb-3 pt-4">Status</th>
-                      <th className="pb-3 pt-4 text-right pr-6">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((user, index) => (
-                      <tr key={index} className="border-b border-gray-100 text-sm hover:bg-gray-50">
-                        <td className="py-4 pl-6">
-                          <div className="flex items-center">
-                            <Avatar className="h-8 w-8 mr-3">
-                              <AvatarFallback className="bg-blue-100 text-blue-700 text-xs">
-                                {user.name.split(' ').map(n => n[0]).join('')}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="font-medium">{user.name}</div>
-                          </div>
-                        </td>
-                        <td className="py-4">{user.email}</td>
-                        <td className="py-4">{user.joined}</td>
-                        <td className="py-4">{user.bookings}</td>
-                        <td className="py-4">
-                          <span 
-                            className={`px-2 py-1 text-xs rounded-full ${
-                              user.status === 'Active' ? 'bg-green-100 text-green-700' : 
-                              user.status === 'New' ? 'bg-blue-100 text-blue-700' : 
-                              'bg-gray-100 text-gray-700'
-                            }`}
-                          >
-                            {user.status}
-                          </span>
-                        </td>
-                        <td className="py-4 text-right pr-6">
-                          <div className="flex justify-end space-x-2">
-                            <button className="text-sm">Profile</button>
-                            <button className="text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                              Edit
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <Skeleton className="h-10 w-64" />
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-4">
+                  <Skeleton className="h-12 w-12 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900">Error loading users</h2>
+          <p className="text-gray-600 mt-2">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const userList = users || [];
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold">User Management</h2>
+          <p className="text-gray-500">Manage registered users and their accounts</p>
+        </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <Input 
+            placeholder="Search users..." 
+            className="pl-10 w-64" 
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Users</p>
+                <p className="text-2xl font-bold">
+                  {loading ? (
+                    <Skeleton className="h-8 w-16" />
+                  ) : (
+                    pagination.total
+                  )}
+                </p>
+              </div>
+              <div className="p-3 rounded-full bg-blue-50">
+                <UserCheck className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Active Users</p>
+                <p className="text-2xl font-bold">
+                  {loading ? (
+                    <Skeleton className="h-8 w-16" />
+                  ) : (
+                    userList.filter((user: AdminUser) => user.isActive).length
+                  )}
+                </p>
+              </div>
+              <div className="p-3 rounded-full bg-green-50">
+                <UserCheck className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Inactive Users</p>
+                <p className="text-2xl font-bold">
+                  {loading ? (
+                    <Skeleton className="h-8 w-16" />
+                  ) : (
+                    userList.filter((user: AdminUser) => !user.isActive).length
+                  )}
+                </p>
+              </div>
+              <div className="p-3 rounded-full bg-red-50">
+                <UserX className="h-6 w-6 text-red-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">New This Month</p>
+                <p className="text-2xl font-bold">
+                  {loading ? (
+                    <Skeleton className="h-8 w-16" />
+                  ) : (
+                    userList.filter((user: AdminUser) => 
+                      new Date(user.createdAt).getMonth() === new Date().getMonth()
+                    ).length
+                  )}
+                </p>
+              </div>
+              <div className="p-3 rounded-full bg-purple-50">
+                <Calendar className="h-6 w-6 text-purple-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Users Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {userList.map((user: AdminUser) => (
+          <Card key={user.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <Avatar className="h-12 w-12">
+                    <AvatarFallback className="bg-blue-500 text-white font-medium">
+                      {user.fullName.split(' ').map((n: string) => n[0]).join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{user.fullName}</h3>
+                    <Badge variant={user.isActive ? "default" : "secondary"}>
+                      {user.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleToggleStatus(user.id)}
+                    className={user.isActive ? "text-red-600 hover:text-red-700" : "text-green-600 hover:text-green-700"}
+                  >
+                    {user.isActive ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteUser(user.id, user.fullName)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center text-sm text-gray-600">
+                  <Mail className="h-4 w-4 mr-2" />
+                  {user.email}
+                </div>
+                {user.city && user.country && (
+                  <div className="flex items-center text-sm text-gray-600">
+                    <MapPin className="h-4 w-4 mr-2" />
+                    {user.city}, {user.country}
+                  </div>
+                )}
+                <div className="flex items-center text-sm text-gray-600">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Joined {new Date(user.createdAt).toLocaleDateString()}
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Bookings</span>
+                  <span className="font-medium">{user.bookingsCount || 0}</span>
+                </div>
+                <div className="flex justify-between text-sm mt-1">
+                  <span className="text-gray-600">Last Login</span>
+                  <span className="font-medium">
+                    {user.lastLoginAt 
+                      ? new Date(user.lastLoginAt).toLocaleDateString()
+                      : 'Never'
+                    }
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>
-    </div>
-  )
-}
+        ))}
+      </div>
 
-export default AdminUserManagePage;
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Page {pagination.page} of {pagination.totalPages} (Total: {pagination.total} users)
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => fetchUsers(pagination.page - 1, pagination.limit, searchQuery)}
+                  disabled={pagination.page === 1 || loading}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => fetchUsers(pagination.page + 1, pagination.limit, searchQuery)}
+                  disabled={pagination.page === pagination.totalPages || loading}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Empty State */}
+      {userList.length === 0 && (
+        <div className="text-center py-12">
+          <UserCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
+          <p className="text-gray-600">
+            {searchQuery ? 'Try adjusting your search criteria.' : 'No users have registered yet.'}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}

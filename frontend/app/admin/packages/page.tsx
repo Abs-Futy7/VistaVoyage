@@ -1,122 +1,730 @@
-import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Edit, Eye, PlusCircle, Search, Trash2 } from "lucide-react";
+"use client";
+import React, { useState } from 'react';
+import Image from 'next/image';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { 
+  Package, 
+  Search, 
+  Edit,
+  Trash2, 
+  Eye,
+  MapPin,
+  Clock,
+  DollarSign,
+  Users,
+  Star,
+  Loader2,
+  AlertCircle,
+  PlusCircle,
+  Copy,
+  Check
+} from 'lucide-react';
+import { useAdminPackages, useAdminDestinations, useAdminTripTypes, useAdminOffers } from '@/hooks/useAdmin';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import AdminForm, { FormField } from '@/components/ui/admin-form';
+import { AdminPackage } from '@/lib/api/services/admin';
+import { toast } from 'sonner';
 
-function PackagePage() {
-  // Sample data for packages
-  const packages = [
+// Helper function to validate UUID format
+const isValidUUID = (uuid: string) => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+};
+
+export default function AdminPackagesPage() {
+  const {
+    packages,
+    loading,
+    error,
+    pagination,
+    fetchPackages,
+    togglePackageStatus,
+    deletePackage,
+    createPackage,
+    updatePackage,
+    search,
+    searchTerm,
+  } = useAdminPackages();
+
+  // Get destinations and trip types for dropdowns
+  const { destinations, loading: destinationsLoading } = useAdminDestinations();
+  const { tripTypes, loading: tripTypesLoading } = useAdminTripTypes();
+  const { offers, loading: offersLoading } = useAdminOffers();
+
+  console.log('Destinations:', destinations, 'Loading:', destinationsLoading);
+  console.log('Trip Types:', tripTypes, 'Loading:', tripTypesLoading);
+  console.log('Offers:', offers, 'Loading:', offersLoading);
+
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingPackage, setEditingPackage] = useState<AdminPackage | null>(null);
+  const [copiedPackageId, setCopiedPackageId] = useState<string | null>(null);
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+
+  // Helper functions to get related data names
+  const getDestinationName = (destinationId: string) => {
+    const destination = destinations.find(d => d.id === destinationId);
+    return destination ? `${destination.name}, ${destination.country}` : destinationId.substring(0, 8) + '...';
+  };
+
+  const getTripTypeName = (tripTypeId: string) => {
+    const tripType = tripTypes.find(t => t.id === tripTypeId);
+    return tripType ? tripType.name : tripTypeId.substring(0, 8) + '...';
+  };
+
+  const getOfferTitle = (offerId?: string) => {
+    if (!offerId) return null;
+    const offer = offers.find(o => o.id === offerId);
+    return offer ? offer.title : offerId.substring(0, 8) + '...';
+  };
+
+  // Helper function to construct full image URL
+  const getImageUrl = (imagePath: string | undefined) => {
+    if (!imagePath) return null;
+    if (imagePath.startsWith('http')) return imagePath;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const fullUrl = `${baseUrl}${imagePath.startsWith('/') ? imagePath : `/${imagePath}`}`;
+    console.log('Constructed package image URL:', fullUrl, 'from path:', imagePath);
+    return fullUrl;
+  };
+
+  // Handle image load errors
+  const handleImageError = (packageId: string) => {
+    setImageErrors(prev => new Set(prev).add(packageId));
+  };
+
+  // Form data state
+  const [createFormData, setCreateFormData] = useState<Record<string, any>>({
+    title: '',
+    description: '',
+    price: '',
+    duration_days: '',
+    duration_nights: '',
+    destination_id: '',
+    trip_type_id: '',
+    offer_id: 'none',
+    is_featured: false,
+    is_active: true
+  });
+
+  const [editFormData, setEditFormData] = useState<Record<string, any>>({});
+
+  // Form fields configuration
+  const formFields: FormField[] = [
     {
-      id: "PKG-001",
-      name: "Bali Adventure",
-      duration: "7 days",
-      price: "$1,299",
-      bookings: 128,
-      status: "Active",
+      name: 'title',
+      label: 'Package Title',
+      type: 'text',
+      required: true,
+      placeholder: 'Enter package title'
     },
     {
-      id: "PKG-002",
-      name: "Paris Getaway",
-      duration: "5 days",
-      price: "$1,899",
-      bookings: 89,
-      status: "Active",
+      name: 'description',
+      label: 'Description',
+      type: 'textarea',
+      required: true,
+      placeholder: 'Describe the package details...',
+      rows: 4
     },
     {
-      id: "PKG-003",
-      name: "Tokyo Explorer",
-      duration: "10 days",
-      price: "$2,499",
-      bookings: 67,
-      status: "Active",
+      name: 'price',
+      label: 'Price ($)',
+      type: 'number',
+      required: true,
+      placeholder: 'e.g., 1299',
+      min: 0,
+      step: 0.01
     },
     {
-      id: "PKG-004",
-      name: "Egypt Wonders",
-      duration: "9 days",
-      price: "$1,799",
-      bookings: 54,
-      status: "Draft",
+      name: 'duration_days',
+      label: 'Duration (Days)',
+      type: 'number',
+      required: true,
+      placeholder: 'e.g., 7',
+      min: 1,
+      step: 1
     },
+    {
+      name: 'duration_nights',
+      label: 'Duration (Nights)',
+      type: 'number',
+      required: true,
+      placeholder: 'e.g., 6',
+      min: 0,
+      step: 1
+    },
+    {
+      name: 'destination_id',
+      label: 'Destination',
+      type: 'select',
+      required: true,
+      placeholder: 'Select a destination',
+      options: destinations.map(dest => ({
+        value: dest.id,
+        label: `${dest.name} (${dest.city}, ${dest.country})`
+      }))
+    },
+    {
+      name: 'trip_type_id',
+      label: 'Trip Type',
+      type: 'select',
+      required: true,
+      placeholder: 'Select a trip type',
+      options: tripTypes.map(type => ({
+        value: type.id,
+        label: `${type.name} - ${type.category}`
+      }))
+    },
+    {
+      name: 'offer_id',
+      label: 'Offer (Optional)',
+      type: 'select',
+      placeholder: 'Select an offer (optional)',
+      options: [
+        { value: 'none', label: 'No offer' },
+        ...offers.map(offer => ({
+          value: offer.id,
+          label: offer.title
+        }))
+      ]
+    },
+    {
+      name: 'featured_image',
+      label: 'Featured Image',
+      type: 'file',
+      accept: 'image/*',
+      maxSize: 5
+    },
+    {
+      name: 'is_featured',
+      label: 'Featured Package',
+      type: 'checkbox'
+    },
+    {
+      name: 'is_active',
+      label: 'Active',
+      type: 'checkbox'
+    }
   ];
-  return (
-    <div className="mt-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold">Travel Packages</h2>
-          <p className="text-gray-500">Manage your travel package offerings</p>
-        </div>
-        <div className="flex space-x-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <Input placeholder="Search packages..." className="pl-10 w-64" />
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    search(searchTerm);
+  };
+
+  const handleCreateFormChange = (field: string, value: any) => {
+    setCreateFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleEditFormChange = (field: string, value: any) => {
+    setEditFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleCreatePackage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Check if reference data is loaded
+    if (destinationsLoading || tripTypesLoading || offersLoading) {
+      toast.error('Please wait for data to load');
+      return;
+    }
+    
+    // Validate required fields
+    if (!createFormData.title?.trim()) {
+      toast.error('Package title is required');
+      return;
+    }
+    
+    if (!createFormData.description?.trim()) {
+      toast.error('Package description is required');
+      return;
+    }
+    
+    if (!createFormData.destination_id) {
+      toast.error('Please select a destination');
+      return;
+    }
+    
+    if (!createFormData.trip_type_id) {
+      toast.error('Please select a trip type');
+      return;
+    }
+
+    // Validate that selected IDs exist in the loaded data
+    const selectedDestination = destinations.find(d => d.id === createFormData.destination_id);
+    const selectedTripType = tripTypes.find(t => t.id === createFormData.trip_type_id);
+    
+    if (!selectedDestination) {
+      toast.error('Selected destination is invalid');
+      return;
+    }
+    
+    if (!selectedTripType) {
+      toast.error('Selected trip type is invalid');
+      return;
+    }
+    
+    // Validate UUID format
+    if (!isValidUUID(createFormData.destination_id)) {
+      toast.error('Invalid destination ID format');
+      return;
+    }
+    
+    if (!isValidUUID(createFormData.trip_type_id)) {
+      toast.error('Invalid trip type ID format');
+      return;
+    }
+    
+    if (createFormData.offer_id && createFormData.offer_id !== 'none') {
+      const selectedOffer = offers.find(o => o.id === createFormData.offer_id);
+      if (!selectedOffer) {
+        toast.error('Selected offer is invalid');
+        return;
+      }
+      if (!isValidUUID(createFormData.offer_id)) {
+        toast.error('Invalid offer ID format');
+        return;
+      }
+    }
+
+    // Extract featured_image file from createFormData
+    const featuredImageFile = createFormData.featured_image instanceof File ? createFormData.featured_image : undefined;
+
+    const packageData = {
+      title: createFormData.title.trim(),
+      description: createFormData.description.trim(),
+      price: parseFloat(createFormData.price) || 0,
+      duration_days: parseInt(createFormData.duration_days) || 1,
+      duration_nights: parseInt(createFormData.duration_nights) || 0,
+      destination_id: createFormData.destination_id,
+      trip_type_id: createFormData.trip_type_id,
+      offer_id: createFormData.offer_id === 'none' ? null : createFormData.offer_id,
+      is_featured: Boolean(createFormData.is_featured),
+      is_active: Boolean(createFormData.is_active)
+    };
+
+    console.log('Creating package with data:', packageData);
+    console.log('Featured image file:', featuredImageFile);
+    console.log('Destination exists:', selectedDestination);
+    console.log('Trip type exists:', selectedTripType);
+
+    const result = await createPackage(packageData, featuredImageFile);
+    if (result) {
+      console.log('Package created successfully:', result);
+      setIsCreateDialogOpen(false);
+      setCreateFormData({
+        title: '',
+        description: '',
+        price: '',
+        duration_days: '',
+        duration_nights: '',
+        destination_id: '',
+        trip_type_id: '',
+        offer_id: 'none',
+        is_featured: false,
+        is_active: true
+      });
+    }
+  };
+
+  const handleUpdatePackage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPackage) return;
+    
+    // Extract featured_image file from editFormData
+    const featuredImageFile = editFormData.featured_image instanceof File ? editFormData.featured_image : undefined;
+    
+    const packageData = {
+      ...(editFormData.title && { title: editFormData.title.trim() }),
+      ...(editFormData.description && { description: editFormData.description.trim() }),
+      ...(editFormData.price && { price: parseFloat(editFormData.price) }),
+      ...(editFormData.duration_days && { duration_days: parseInt(editFormData.duration_days) }),
+      ...(editFormData.duration_nights && { duration_nights: parseInt(editFormData.duration_nights) }),
+      ...(editFormData.destination_id && { destination_id: editFormData.destination_id }),
+      ...(editFormData.trip_type_id && { trip_type_id: editFormData.trip_type_id }),
+      ...(editFormData.offer_id !== undefined && { offer_id: editFormData.offer_id === 'none' ? null : editFormData.offer_id }),
+      ...(editFormData.is_featured !== undefined && { is_featured: Boolean(editFormData.is_featured) }),
+      ...(editFormData.is_active !== undefined && { is_active: Boolean(editFormData.is_active) })
+    };
+
+    console.log('Updating package with data:', packageData);
+    console.log('Featured image file:', featuredImageFile);
+
+    const result = await updatePackage(editingPackage.id, packageData, featuredImageFile);
+    if (result) {
+      setIsEditDialogOpen(false);
+      setEditingPackage(null);
+      setEditFormData({});
+    }
+  };
+
+  const handleTogglePackageStatus = async (packageId: string) => {
+    setActionLoading(packageId);
+    await togglePackageStatus(packageId);
+    setActionLoading(null);
+  };
+
+  const handleDeletePackage = async (packageId: string, packageTitle: string) => {
+    if (!confirm(`Are you sure you want to delete package "${packageTitle}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    setActionLoading(packageId);
+    await deletePackage(packageId);
+    setActionLoading(null);
+  };
+
+  const handleEditPackage = (pkg: AdminPackage) => {
+    setEditingPackage(pkg);
+    setEditFormData({
+      title: pkg.title,
+      description: pkg.description,
+      price: pkg.price.toString(),
+      duration_days: pkg.duration_days.toString(),
+      duration_nights: pkg.duration_nights.toString(),
+      destination_id: pkg.destination_id,
+      trip_type_id: pkg.trip_type_id,
+      offer_id: pkg.offer_id || 'none',
+      is_featured: pkg.is_featured,
+      is_active: pkg.is_active
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const copyPackageId = async (packageId: string) => {
+    try {
+      await navigator.clipboard.writeText(packageId);
+      setCopiedPackageId(packageId);
+      toast.success('Package ID copied to clipboard!');
+      
+      setTimeout(() => {
+        setCopiedPackageId(null);
+      }, 2000);
+    } catch (error) {
+      toast.error('Failed to copy package ID');
+    }
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(price);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  if (loading && packages.length === 0) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-500" />
+            <p className="mt-2 text-gray-600">Loading packages...</p>
           </div>
-          <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-            <PlusCircle className="h-4 w-4 mr-2 " />
-            Add Package
-          </button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Package className="h-6 w-6" />
+          <h1 className="text-3xl font-bold">Package Management</h1>
+        </div>
+        <div className="text-sm text-gray-600">
+          Total: {pagination.total} packages
         </div>
       </div>
 
-      <Card className="border-none shadow-sm">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left text-xs text-gray-500 border-b border-gray-200">
-                  <th className="pb-3 pt-4 pl-6">Package ID</th>
-                  <th className="pb-3 pt-4">Package Name</th>
-                  <th className="pb-3 pt-4">Duration</th>
-                  <th className="pb-3 pt-4">Price</th>
-                  <th className="pb-3 pt-4">Total Bookings</th>
-                  <th className="pb-3 pt-4">Status</th>
-                  <th className="pb-3 pt-4 text-right pr-10">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {packages.map((pkg, index) => (
-                  <tr
-                    key={index}
-                    className="border-b border-gray-100 text-sm hover:bg-gray-50"
-                  >
-                    <td className="py-4 pl-6 font-medium">{pkg.id}</td>
-                    <td className="py-4 font-medium">{pkg.name}</td>
-                    <td className="py-4">{pkg.duration}</td>
-                    <td className="py-4">{pkg.price}</td>
-                    <td className="py-4">{pkg.bookings}</td>
-                    <td className="py-4">
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full ${
-                          pkg.status === "Active"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-700"
-                        }`}
-                      >
-                        {pkg.status}
-                      </span>
-                    </td>
-                    <td className="py-4 text-right pr-6">
-                      <div className="flex justify-end space-x-2">
-                        <button className="h-8 w-8 p-0">
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button className="h-8 w-8 p-0">
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button className="h-8 w-8 p-0 text-red-600 hover:text-red-700">
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/* Search and Create */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex gap-4 justify-between">
+            <form onSubmit={handleSearch} className="flex gap-4 flex-1">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search packages by title..."
+                  value={searchTerm}
+                  onChange={(e) => search(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button type="submit" disabled={loading}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Search'}
+              </Button>
+            </form>
+            
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center">
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Create Package
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Create New Package</DialogTitle>
+                </DialogHeader>
+                <AdminForm
+                  title=""
+                  fields={formFields}
+                  data={createFormData}
+                  onChange={handleCreateFormChange}
+                  onSubmit={handleCreatePackage}
+                  submitText="Create Package"
+                  loading={loading}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
         </CardContent>
       </Card>
+
+      {/* Error Display */}
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center text-red-600">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              <span>{error}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Packages Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {packages.length === 0 ? (
+          <div className="col-span-full text-center py-12">
+            {loading ? (
+              <div className="flex items-center justify-center">
+                <Loader2 className="h-12 w-12 animate-spin text-blue-500 mb-4" />
+              </div>
+            ) : (
+              <>
+                <AlertCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-600">
+                  {searchTerm ? 'No packages found matching your search.' : 'No packages found.'}
+                </p>
+                {!searchTerm && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    Create your first package to get started!
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        ) : (
+          packages.map((pkg) => (
+            <Card key={pkg.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+              {/* Featured Image */}
+              <div className="h-48 bg-gradient-to-br from-green-50 to-blue-50 relative overflow-hidden">
+                {getImageUrl(pkg.featured_image) && !imageErrors.has(pkg.id) ? (
+                  <Image 
+                    src={getImageUrl(pkg.featured_image)!}
+                    alt={pkg.title}
+                    fill
+                    className="object-cover transition-transform duration-300 hover:scale-105"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    priority={false}
+                    onError={() => handleImageError(pkg.id)}
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+                    <Package className="h-12 w-12 text-white opacity-50" />
+                  </div>
+                )}
+                
+                {/* Status Badge */}
+                <div className="absolute top-3 left-3">
+                  <Badge variant={pkg.is_active ? 'default' : 'secondary'}>
+                    {pkg.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+
+                {/* Featured Badge */}
+                {pkg.is_featured && (
+                  <div className="absolute top-3 right-3">
+                    <Badge variant="default" className="bg-yellow-500">
+                      <Star className="h-3 w-3 mr-1" />
+                      Featured
+                    </Badge>
+                  </div>
+                )}
+
+                {/* Copy ID Button */}
+                <div className="absolute bottom-3 right-3">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => copyPackageId(pkg.id)}
+                    className="h-8 w-8 p-0"
+                    title="Copy Package ID"
+                  >
+                    {copiedPackageId === pkg.id ? (
+                      <Check className="h-3 w-3 text-green-600" />
+                    ) : (
+                      <Copy className="h-3 w-3" />
+                    )}
+                  </Button>
+                </div>
+
+                {/* Price Tag */}
+                <div className="absolute bottom-3 left-3">
+                  <Badge variant="default" className="bg-green-600">
+                    <DollarSign className="h-3 w-3 mr-1" />
+                    {formatPrice(pkg.price)}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Content */}
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="font-semibold text-lg line-clamp-2">{pkg.title}</h3>
+                    <p className="text-sm text-gray-600 line-clamp-3 mt-1">{pkg.description}</p>
+                  </div>
+
+                  {/* Package Details */}
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="flex items-center text-gray-600">
+                      <Clock className="h-3 w-3 mr-1" />
+                      <span>{pkg.duration_days}D/{pkg.duration_nights}N</span>
+                    </div>
+                    <div className="flex items-center text-gray-600">
+                      <MapPin className="h-3 w-3 mr-1" />
+                      <span className="truncate">
+                        {getDestinationName(pkg.destination_id)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Package Details */}
+                  <div className="space-y-1">
+                    <div className="text-xs text-gray-500">
+                      <div>Type: {getTripTypeName(pkg.trip_type_id)}</div>
+                      {pkg.offer_id && <div>Offer: {getOfferTitle(pkg.offer_id)}</div>}
+                    </div>
+                  </div>
+
+                  {/* Date */}
+                  <div className="text-xs text-gray-500">
+                    Created: {formatDate(pkg.created_at)}
+                  </div>
+                </div>
+              </CardContent>
+
+              {/* Actions */}
+              <div className="px-4 pb-4">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEditPackage(pkg)}
+                    disabled={actionLoading === pkg.id}
+                    className="flex-1"
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleTogglePackageStatus(pkg.id)}
+                    disabled={actionLoading === pkg.id}
+                  >
+                    {actionLoading === pkg.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : pkg.is_active ? (
+                      'Deactivate'
+                    ) : (
+                      'Activate'
+                    )}
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeletePackage(pkg.id, pkg.title)}
+                    disabled={actionLoading === pkg.id}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    {actionLoading === pkg.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Page {pagination.page} of {pagination.totalPages}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => fetchPackages(pagination.page - 1)}
+                  disabled={pagination.page === 1 || loading}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => fetchPackages(pagination.page + 1)}
+                  disabled={pagination.page === pagination.totalPages || loading}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Edit Package Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Package</DialogTitle>
+          </DialogHeader>
+          {editingPackage && (
+            <AdminForm
+              title=""
+              fields={formFields}
+              data={editFormData}
+              onChange={handleEditFormChange}
+              onSubmit={handleUpdatePackage}
+              submitText="Update Package"
+              loading={loading}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
-export default PackagePage;

@@ -13,35 +13,38 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
-import { FaGoogle, FaFacebook } from "react-icons/fa";
+import { useAuth } from '@/hooks/useAuth';
+import { ApiError } from '@/lib/api';
 
 function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Mock login logic with simulated delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      if (email === "user@example.com" && password === "password") {
-        localStorage.setItem("isAuthenticated", "true");
-        toast.success("Login Successful", {
-          description: "Welcome back to VoyageVista!",
-          icon: <Check className="h-4 w-4" />,
-        });
-        router.push("/"); // Redirect to homepage
-        window.dispatchEvent(new Event("storage"));
-      } else {
-        toast.error("Login Failed", {
-          description: "Invalid email or password. Please try again.",
-        });
-      }
+      await login(email, password);
+      
+      toast.success("Login Successful", {
+        description: "Welcome back to VoyageVista!",
+        icon: <Check className="h-4 w-4" />,
+      });
+      
+      router.push("/"); // Redirect to homepage
+    } catch (error: any) {
+      console.error('Login error:', error);
+      
+      const apiError = error as ApiError;
+      const errorMessage = apiError.message || 'Login failed. Please try again.';
+      
+      toast.error("Login Failed", {
+        description: errorMessage,
+      });
     } finally {
       setIsLoading(false);
     }
