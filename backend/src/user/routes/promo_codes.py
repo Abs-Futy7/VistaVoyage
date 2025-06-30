@@ -5,15 +5,15 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import Optional
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from ..db.main import get_session
-from ..schemas.promo_code_schemas import PromoCodeValidationModel, PromoCodeValidationResponseModel
-from ..services.promo_code_service import PromoCodeService
-from ..auth.dependencies import get_current_user
+from ...db.main import get_session
+from ...schemas.promo_code_schemas import PromoCodeValidationModel, PromoCodeValidationResponseModel
+from ...services.promo_code_service import PromoCodeService
+from ...auth.dependencies import get_current_user
 
-promo_router = APIRouter()
+promo_codes_router = APIRouter()
 
 
-@promo_router.post("/validate", response_model=PromoCodeValidationResponseModel)
+@promo_codes_router.post("/validate", response_model=PromoCodeValidationResponseModel)
 async def validate_promo_code(
     validation_data: PromoCodeValidationModel,
     session: AsyncSession = Depends(get_session),
@@ -46,7 +46,7 @@ async def validate_promo_code(
         )
 
 
-@promo_router.get("/check/{code}", response_model=PromoCodeValidationResponseModel)
+@promo_codes_router.get("/check/{code}", response_model=PromoCodeValidationResponseModel)
 async def check_promo_code_quick(
     code: str,
     booking_amount: float = Query(gt=0, description="Booking amount to calculate discount"),

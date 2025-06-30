@@ -5,18 +5,17 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import Optional, List
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from ..db.main import get_session
-from ..schemas.booking_schemas import (
+from ...db.main import get_session
+from ...schemas.booking_schemas import (
     BookingCreateModel, 
     BookingUpdateModel, 
     BookingResponseModel, 
     BookingListResponseModel
 )
-from ..services.booking_service import booking_service
-from ..auth.dependencies import get_current_user
+from ...services.booking_service import booking_service
+from ...auth.dependencies import get_current_user
 
 booking_router = APIRouter()
-
 
 @booking_router.post("/", response_model=BookingResponseModel)
 async def create_booking(

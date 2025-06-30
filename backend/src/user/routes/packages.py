@@ -6,17 +6,18 @@ from typing import Optional
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
 
-from ..db.main import get_session
-from ..models.package import Package
-from ..models.destination import Destination
-from ..models.trip_type import TripType
-from ..models.offer import Offer
-from ..schemas.package_schemas import (
+from ...auth.dependencies import get_current_user
+from ...db.main import get_session
+from ...models.package import Package
+from ...models.destination import Destination
+from ...models.trip_type import TripType
+from ...models.offer import Offer
+from ...schemas.package_schemas import (
     PackageResponseModel, 
     PackageDetailResponseModel,
     PackageListResponseModel
 )
-from ..services.package_service import package_service
+from ...services.package_service import package_service
 
 packages_router = APIRouter()
 
@@ -31,7 +32,9 @@ async def get_public_packages(
     min_price: Optional[float] = Query(None, ge=0, description="Minimum price"),
     max_price: Optional[float] = Query(None, ge=0, description="Maximum price"),
     difficulty: Optional[str] = Query(None, description="Filter by difficulty level"),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user),
+
 ):
     """Get public packages with filtering (only active packages)"""
     try:
@@ -50,7 +53,8 @@ async def get_public_packages(
 @packages_router.get("/featured", response_model=PackageListResponseModel)
 async def get_featured_packages(
     limit: int = Query(6, ge=1, le=20, description="Number of featured packages"),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user)
 ):
     """Get featured packages for homepage"""
     try:
@@ -145,3 +149,4 @@ async def get_search_suggestions(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+ 
