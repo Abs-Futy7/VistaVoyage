@@ -40,4 +40,12 @@ class DestinationService:
             "total_pages": total_pages
         }
 
+    async def get_destination_by_id(self, session: AsyncSession, destination_id: str):
+        statement = select(Destination).where(Destination.id == destination_id)
+        result = await session.exec(statement)
+        destination = result.first()
+        if not destination:
+            return None
+        return DestinationResponseModel.model_validate(destination)
+
 destination_service = DestinationService()

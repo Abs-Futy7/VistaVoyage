@@ -11,6 +11,9 @@ import React, { useEffect, useState } from "react";
 import { LuListFilter } from "react-icons/lu";
 import PackageCard from "@/components/ui/PackageCard";
 import { packageService, PublicPackage, PackageSearchFilters } from "@/lib/api/services/packages";
+import { offerService, Offer } from '@/lib/api/services/offers';
+import { tripTypeService, TripType } from '@/lib/api/services/tripTypes';
+import { destinationService, Destination } from '@/lib/api/services/destinations';
 import { toast } from "sonner";
 
 function PackageListingPage() {
@@ -27,30 +30,79 @@ function PackageListingPage() {
     fetchPackages();
   }, [searchTerm, priceRange, tripType, page]);
 
+  // Helper to fetch offer, trip type, and destination for a package
+  const fetchOfferTripTypeDestination = async (pkg: PublicPackage) => {
+    let offer: Offer | undefined = undefined;
+    let tripType: TripType | undefined = undefined;
+    let destination: Destination | undefined = undefined;
+    try {
+      if (pkg.offer_id) {
+        offer = await offerService.getOfferById(pkg.offer_id);
+      }
+    } catch {}
+    try {
+      if (pkg.trip_type_id) {
+        tripType = await tripTypeService.getTripTypeById(pkg.trip_type_id);
+      }
+    } catch {}
+    try {
+      if (pkg.destination_id) {
+        destination = await destinationService.getDestinationById(pkg.destination_id);
+      }
+    } catch {}
+    return { offer, tripType, destination };
+  };
+
+  // Transform package for card with offer/tripType/destination info
+  const transformPackageForCard = (pkg: PublicPackage & { offer?: Offer; tripType?: TripType; destination?: Destination }) => ({
+    id: pkg.id,
+    title: pkg.title,
+    destination: pkg.destination
+      ? `${pkg.destination.name}, ${pkg.destination.country}`
+      : (pkg.destination ? `${(pkg.destination as Destination).name}, ${(pkg.destination as Destination).country}` : 'Unknown destination'),
+    price: pkg.offer ? pkg.price * (1 - (pkg.offer.discount_percentage || 0) / 100) : pkg.price,
+    originalPrice: pkg.price,
+    duration: `${pkg.duration_days} days`,
+    imageUrl: pkg.featured_image || '/images/default-package.jpg',
+    imageHint: `${pkg.title} - ${pkg.destination?.name || (pkg.destination as Destination)?.name || 'Unknown'}`,
+    rating: 4.5, // TODO: Add rating system
+    reviews: 24, // TODO: Add reviews system
+    category: pkg.tripType?.name || 'Other',
+    features: pkg.highlights?.split('\n').slice(0, 3) || [],
+    isPopular: pkg.is_featured,
+    discount: pkg.offer?.discount_percentage,
+    offerName: pkg.offer?.title,
+    tripTypeDescription: pkg.tripType?.description,
+  });
+
+  // Fetch packages and enrich with offer/tripType/destination
   const fetchPackages = async () => {
     try {
       setLoading(true);
-      
       const filters: PackageSearchFilters = {
         ...(searchTerm && { search: searchTerm }),
-        ...(priceRange !== "any" && getPriceFilter(priceRange)),
-        ...(tripType !== "any" && { trip_type: tripType })
+        ...(priceRange !== 'any' && getPriceFilter(priceRange)),
+        ...(tripType !== 'any' && { trip_type: tripType }),
       };
-
       const response = await packageService.getAllPackages(page, 12, filters);
-      
+      // Fetch offer/tripType/destination for each package in parallel
+      const enrichedPackages = await Promise.all(
+        response.packages.map(async (pkg) => {
+          const { offer, tripType, destination } = await fetchOfferTripTypeDestination(pkg);
+          return { ...pkg, offer, tripType, destination };
+        })
+      );
       if (page === 1) {
-        setPackages(response.packages);
+        setPackages(enrichedPackages);
       } else {
-        setPackages(prev => [...prev, ...response.packages]);
+        setPackages((prev) => [...prev, ...enrichedPackages]);
       }
-      
       setTotalPages(response.total_pages);
       setHasMore(page < response.total_pages);
     } catch (error: any) {
       console.error('Failed to fetch packages:', error);
       toast.error('Failed to load packages', {
-        description: error.message || 'Please try again'
+        description: error.message || 'Please try again',
       });
     } finally {
       setLoading(false);
@@ -92,23 +144,6 @@ function PackageListingPage() {
       setPage(prev => prev + 1);
     }
   };
-
-  const transformPackageForCard = (pkg: PublicPackage) => ({
-    id: pkg.id,
-    title: pkg.title,
-    destination: `${pkg.destination.name}, ${pkg.destination.country}`,
-    price: pkg.price,
-    originalPrice: pkg.offer ? pkg.price / (1 - (pkg.offer.discount_percentage || 0) / 100) : pkg.price,
-    duration: `${pkg.duration_days} days`,
-    imageUrl: pkg.featured_image || '/images/default-package.jpg',
-    imageHint: `${pkg.title} - ${pkg.destination.name}`,
-    rating: 4.5, // TODO: Add rating system
-    reviews: 24,  // TODO: Add reviews system
-    category: pkg.trip_type.name,
-    features: pkg.highlights?.split('\n').slice(0, 3) || [],
-    isPopular: pkg.is_featured,
-    discount: pkg.offer?.discount_percentage
-  });
 
   const handleApplyFilters = () => {
     // You could add additional logic here if needed

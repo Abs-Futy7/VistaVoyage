@@ -22,7 +22,7 @@ from ...services.package_service import package_service
 packages_router = APIRouter()
 
 
-@packages_router.get("/", response_model=PackageListResponseModel)
+@packages_router.get("/packages", response_model=PackageListResponseModel)
 async def get_public_packages(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(12, ge=1, le=50, description="Number of items per page"),
@@ -34,7 +34,6 @@ async def get_public_packages(
     difficulty: Optional[str] = Query(None, description="Filter by difficulty level"),
     session: AsyncSession = Depends(get_session),
     current_user=Depends(get_current_user),
-
 ):
     """Get public packages with filtering (only active packages)"""
     try:
@@ -50,7 +49,7 @@ async def get_public_packages(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@packages_router.get("/featured", response_model=PackageListResponseModel)
+@packages_router.get("/packages/featured", response_model=PackageListResponseModel)
 async def get_featured_packages(
     limit: int = Query(6, ge=1, le=20, description="Number of featured packages"),
     session: AsyncSession = Depends(get_session),
@@ -78,7 +77,31 @@ async def get_featured_packages(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@packages_router.get("/{package_id}", response_model=PackageDetailResponseModel)
+@packages_router.get("/packages/search/suggestions")
+async def get_search_suggestions(
+    q: str = Query(..., min_length=2, description="Search query"),
+    session: AsyncSession = Depends(get_session)
+):
+    """Get search suggestions for packages"""
+    try:
+        search_term = f"%{q}%"
+        
+        # Search in package titles and destinations
+        statement = select(Package.title).where(
+            Package.title.ilike(search_term),
+            Package.is_active == True
+        ).limit(5)
+        
+        result = await session.exec(statement)
+        suggestions = result.all()
+        
+        return {"suggestions": suggestions}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@packages_router.get("/packages/{package_id}", response_model=PackageDetailResponseModel)
 async def get_package_details(
     package_id: str,
     session: AsyncSession = Depends(get_session)
@@ -126,27 +149,3 @@ async def get_package_details(
             raise e
         raise HTTPException(status_code=500, detail=str(e))
 
-
-@packages_router.get("/search/suggestions")
-async def get_search_suggestions(
-    q: str = Query(..., min_length=2, description="Search query"),
-    session: AsyncSession = Depends(get_session)
-):
-    """Get search suggestions for packages"""
-    try:
-        search_term = f"%{q}%"
-        
-        # Search in package titles and destinations
-        statement = select(Package.title).where(
-            Package.title.ilike(search_term),
-            Package.is_active == True
-        ).limit(5)
-        
-        result = await session.exec(statement)
-        suggestions = result.all()
-        
-        return {"suggestions": suggestions}
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
- 

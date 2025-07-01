@@ -5,6 +5,7 @@ from .activities import activities_router
 from .offers import offers_router
 from .promo_codes import promo_codes_router
 from .bookings import booking_router
+from .trip_type import trip_type_router
 
 
 
@@ -14,5 +15,6 @@ __all__ = [
     "activities_router",
     "offers_router",
     "promo_codes_router",
-    "booking_router"
+    "booking_router",
+    "trip_type_router"
 ]

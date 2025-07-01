@@ -39,5 +39,16 @@ class OfferService:
             "limit": limit,
             "total_pages": total_pages
         }
+    
+    async def get_offer_by_id(self, session, offer_id: str):
+        from ..models.offer import Offer
+        from ..schemas.offer_schemas import OfferResponseModel
+        from sqlmodel import select
+        statement = select(Offer).where(Offer.id == offer_id)
+        result = await session.exec(statement)
+        offer = result.first()
+        if not offer:
+            return None
+        return OfferResponseModel.model_validate(offer)
 
 offer_service = OfferService()

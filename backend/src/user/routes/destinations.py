@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from ...db.main import get_session
 from ...auth.dependencies import get_current_user
 from ...services.destination_service import destination_service
-from ...schemas.destination_schemas import DestinationListResponseModel
+from ...schemas.destination_schemas import DestinationListResponseModel, DestinationResponseModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 destinations_router = APIRouter()
@@ -28,6 +28,23 @@ async def get_destinations(
             search=search
         )
         return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@destinations_router.get("/destinations/{destination_id}", response_model=DestinationResponseModel)
+async def get_destination_by_id(
+    destination_id: str,
+    session: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user)
+):
+    """
+    Get a single destination by its ID.
+    """
+    try:
+        destination = await destination_service.get_destination_by_id(session, destination_id)
+        if not destination:
+            raise HTTPException(status_code=404, detail="Destination not found")
+        return destination
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

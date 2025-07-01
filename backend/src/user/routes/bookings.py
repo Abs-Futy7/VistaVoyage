@@ -17,7 +17,7 @@ from ...auth.dependencies import get_current_user
 
 booking_router = APIRouter()
 
-@booking_router.post("/", response_model=BookingResponseModel)
+@booking_router.post("/bookings", response_model=BookingResponseModel)
 async def create_booking(
     booking_data: BookingCreateModel,
     session: AsyncSession = Depends(get_session),
@@ -45,7 +45,7 @@ async def create_booking(
         )
 
 
-@booking_router.get("/", response_model=BookingListResponseModel)
+@booking_router.get("/bookings", response_model=BookingListResponseModel)
 async def get_user_bookings(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(10, ge=1, le=50, description="Number of items per page"),
@@ -78,7 +78,40 @@ async def get_user_bookings(
         )
 
 
-@booking_router.get("/{booking_id}", response_model=BookingResponseModel)
+@booking_router.post("/bookings/validate-promo")
+async def validate_promo_for_booking(
+    code: Optional[str] = None,
+    promo_code_id: Optional[str] = None,
+    booking_amount: float = Query(gt=0),
+    package_id: Optional[str] = None,
+    session: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user)
+):
+    """
+    Validate a promo code for a potential booking.
+    
+    This endpoint allows users to check if a promo code is valid
+    before actually creating a booking.
+    """
+    try:
+        result = await booking_service.validate_promo_code(
+            session=session,
+            code=code,
+            promo_code_id=promo_code_id,
+            booking_amount=booking_amount,
+            package_id=package_id
+        )
+        
+        return result
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error validating promo code: {str(e)}"
+        )
+
+
+@booking_router.get("/bookings/{booking_id}", response_model=BookingResponseModel)
 async def get_booking(
     booking_id: str,
     session: AsyncSession = Depends(get_session),
@@ -109,37 +142,4 @@ async def get_booking(
         raise HTTPException(
             status_code=500,
             detail=f"Error fetching booking: {str(e)}"
-        )
-
-
-@booking_router.post("/validate-promo")
-async def validate_promo_for_booking(
-    code: Optional[str] = None,
-    promo_code_id: Optional[str] = None,
-    booking_amount: float = Query(gt=0),
-    package_id: Optional[str] = None,
-    session: AsyncSession = Depends(get_session),
-    current_user=Depends(get_current_user)
-):
-    """
-    Validate a promo code for a potential booking.
-    
-    This endpoint allows users to check if a promo code is valid
-    before actually creating a booking.
-    """
-    try:
-        result = await booking_service.validate_promo_code(
-            session=session,
-            code=code,
-            promo_code_id=promo_code_id,
-            booking_amount=booking_amount,
-            package_id=package_id
-        )
-        
-        return result
-        
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error validating promo code: {str(e)}"
         )

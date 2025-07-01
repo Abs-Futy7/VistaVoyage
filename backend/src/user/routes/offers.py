@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from ...db.main import get_session
 from ...auth.dependencies import get_current_user
 from ...services.offer_service import offer_service
-from ...schemas.offer_schemas import OfferListResponseModel
+from ...schemas.offer_schemas import OfferListResponseModel, OfferResponseModel
 
 offers_router  = APIRouter()
 
@@ -23,6 +23,20 @@ async def get_offers(
             active_only=True
         )
         return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@offers_router.get("/offers/{offer_id}", response_model=OfferResponseModel)
+async def get_offer_by_id(
+    offer_id: str,
+    session=Depends(get_session),
+    current_user=Depends(get_current_user)
+):
+    try:
+        offer = await offer_service.get_offer_by_id(session, offer_id)
+        if not offer:
+            raise HTTPException(status_code=404, detail="Offer not found")
+        return offer
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -33,13 +33,15 @@ export default function EditPackagePage({ params }: EditPackagePageProps) {
       const data = await adminService.getPackageById(resolvedParams.id);
       // Convert date fields to Date objects if present and valid, else null
       const parseDate = (val: any) => {
-        if (!val || typeof val !== 'string' || val.trim() === '') return null;
+        if (!val || typeof val !== 'string' || val.trim() === '') return undefined;
         const d = new Date(val);
-        return isNaN(d.getTime()) ? null : d;
+        return isNaN(d.getTime()) ? undefined : d;
       };
-    const processedData = {
-      ...data,
-    };
+      const processedData = {
+        ...data,
+        available_from: parseDate(data.available_from),
+        available_until: parseDate(data.available_until),
+      };
       setPackageData(processedData);
     } catch (error: any) {
       console.error('Failed to fetch package data:', error);

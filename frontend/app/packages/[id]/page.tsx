@@ -1,28 +1,94 @@
-
 "use client";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TabsContent, TabsList, TabsTrigger, Tabs } from '@/components/ui/tabs';
 import { CalendarDays, CheckCircle, Heart, MapPin, Share2, Star, Tag, Users, Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { BsArrowRight } from 'react-icons/bs';
 import { packageService, PublicPackage } from '@/lib/api/services/packages';
+import { offerService, Offer } from '@/lib/api/services/offers';
+import { tripTypeService, TripType } from '@/lib/api/services/tripTypes';
+// TODO: Update the import path below to the correct location of your destinations service file.
+// Example correction if the file is actually named 'destination' (singular):
+// import { destinationService, Destination } from '@/lib/api/services/destination';
+
+// If the file does not exist, create 'destination.ts' or 'destinations.ts' in '@/lib/api/services/' with the appropriate exports.
+import { destinationService, Destination } from '@/lib/api/services/destinations';
 import { toast } from 'sonner';
 
 export default function PackageDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const [packageDetails, setPackageDetails] = useState<PublicPackage | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [destination, setDestination] = useState<Destination | null>(null);
+  const [destinationLoading, setDestinationLoading] = useState(false);
+  const [showDestinationDetails, setShowDestinationDetails] = useState(false);
+  const [offer, setOffer] = useState<Offer | null>(null);
+  const [offerLoading, setOfferLoading] = useState(false);
+  const [tripType, setTripType] = useState<TripType | null>(null);
+  const [tripTypeLoading, setTripTypeLoading] = useState(false);
   const resolvedParams = React.use(params);
 
   useEffect(() => {
     fetchPackageDetails();
   }, [resolvedParams.id]);
 
+  const fetchDestination = useCallback(async (destinationId: string) => {
+    setDestinationLoading(true);
+    try {
+      const dest = await destinationService.getDestinationById(destinationId);
+      setDestination(dest);
+    } catch (e) {
+      setDestination(null);
+    } finally {
+      setDestinationLoading(false);
+    }
+  }, []);
+
+  const fetchOffer = useCallback(async (offerId: string) => {
+    setOfferLoading(true);
+    try {
+      const offerData = await offerService.getOfferById(offerId);
+      setOffer(offerData);
+    } catch (e) {
+      setOffer(null);
+    } finally {
+      setOfferLoading(false);
+    }
+  }, []);
+
+  const fetchTripType = useCallback(async (tripTypeId: string) => {
+    setTripTypeLoading(true);
+    try {
+      const tripTypeData = await tripTypeService.getTripTypeById(tripTypeId);
+      setTripType(tripTypeData);
+    } catch (e) {
+      setTripType(null);
+    } finally {
+      setTripTypeLoading(false);
+    }
+  }, []);
+
   const fetchPackageDetails = async () => {
     try {
       setLoading(true);
       const data = await packageService.getPackageById(resolvedParams.id);
       setPackageDetails(data);
+      if (data.destination_id) {
+        fetchDestination(data.destination_id);
+      } else {
+        setDestination(null);
+      }
+      if (data.offer_id) {
+        fetchOffer(data.offer_id);
+      } else {
+        setOffer(null);
+      }
+      if (data.trip_type_id) {
+        fetchTripType(data.trip_type_id);
+      } else {
+        setTripType(null);
+      }
     } catch (error: any) {
       console.error('Failed to fetch package details:', error);
       toast.error('Failed to load package details', {
@@ -33,10 +99,11 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
     }
   };
 
-  const parseGallery = (galleryString?: string) => {
-    if (!galleryString) return [];
+  const parseGallery = (gallery?: string[] | string) => {
+    if (!gallery) return [];
+    if (Array.isArray(gallery)) return gallery;
     try {
-      return JSON.parse(galleryString);
+      return JSON.parse(gallery);
     } catch {
       return [];
     }
@@ -86,8 +153,9 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
   }
 
   const gallery = parseGallery(packageDetails.image_gallery);
-  const effectivePrice = packageDetails.offer 
-    ? packageDetails.price * (1 - (packageDetails.offer.discount_percentage || 0) / 100)
+  // Calculate effective price using offer from API
+  const effectivePrice = offer
+    ? packageDetails.price * (1 - (offer.discount_percentage || 0) / 100)
     : packageDetails.price;
 
   return (
@@ -113,9 +181,9 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
               Featured
             </div>
           )}
-          {packageDetails.offer && (
+          {offer && (
             <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-              {packageDetails.offer.discount_percentage}% OFF
+              {offer.discount_percentage}% OFF
             </div>
           )}
         </div>
@@ -126,7 +194,9 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-blue-300">
                 <MapPin className="h-5 w-5" />
-                <span className="text-lg">{packageDetails.destination.name}, {packageDetails.destination.country}</span>
+                <span className="text-lg">
+                  {destinationLoading ? 'Loading destination...' : (destination ? `${destination.name}, ${destination.country}` : "Unknown")}
+                </span>
               </div>
               <h1 className="text-4xl md:text-6xl font-bold leading-tight">
                 {packageDetails.title}
@@ -273,7 +343,11 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {gallery.map((image: string, index: number) => (
-                      <div key={index} className="relative aspect-video rounded-lg overflow-hidden">
+                      <div
+                        key={index}
+                        className="relative aspect-video rounded-lg overflow-hidden cursor-pointer"
+                        onClick={() => setSelectedImage(image)}
+                      >
                         <Image
                           src={image}
                           alt={`Gallery ${index + 1}`}
@@ -283,6 +357,29 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
                       </div>
                     ))}
                   </div>
+                  {/* Modal for full-size image */}
+                  {selectedImage && (
+                    <div
+                      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80"
+                      onClick={() => setSelectedImage(null)}
+                    >
+                      <div className="relative max-w-3xl w-full">
+                        <Image
+                          src={selectedImage}
+                          alt="Full Size"
+                          width={900}
+                          height={500}
+                          className="rounded-lg object-contain mx-auto"
+                        />
+                        <button
+                          className="absolute top-2 right-2 text-white text-2xl"
+                          onClick={e => { e.stopPropagation(); setSelectedImage(null); }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -296,7 +393,7 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
                 <div className="space-y-6">
                   <div className="text-center">
                     <div className="flex items-center justify-center gap-2">
-                      {packageDetails.offer && (
+                      {offer && (
                         <span className="text-2xl text-gray-400 line-through">
                           ${packageDetails.price}
                         </span>
@@ -315,14 +412,28 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Trip Type</span>
-                      <span className="font-medium">{packageDetails.trip_type.name}</span>
+                      <span className="font-medium">
+                        {tripTypeLoading ? 'Loading...' : (tripType ? tripType.name : 'Other')}
+                      </span>
                     </div>
-                    {packageDetails.difficulty_level && (
+                    {tripType && tripType.description && (
+                      <div className="text-xs text-gray-500 mb-2">{tripType.description}</div>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Offer</span>
+                      <span className="font-medium">
+                        {offerLoading ? 'Loading...' : (offer ? `${offer.title} (${offer.discount_percentage || 0}% OFF)` : 'No Offer')}
+                      </span>
+                    </div>
+                    {offer && offer.description && (
+                      <div className="text-xs text-gray-500 mb-2">{offer.description}</div>
+                    )}
+                    {/* {packageDetails.difficulty_level && (
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Difficulty</span>
                         <span className="font-medium capitalize">{packageDetails.difficulty_level}</span>
                       </div>
-                    )}
+                    )} */}
                     {packageDetails.min_age && (
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Min Age</span>
@@ -357,7 +468,32 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
               <CardContent className="space-y-4">
                 <div>
                   <h4 className="font-medium mb-2">Destination</h4>
-                  <p className="text-gray-600">{packageDetails.destination.city}, {packageDetails.destination.country}</p>
+                  <p className="text-gray-600">
+                    {destinationLoading ? 'Loading destination...' : (destination ? `${destination.city}, ${destination.country}` : "Unknown")}
+                  </p>
+                  {destination && (
+                    <button
+                      className="mt-2 text-blue-600 hover:underline text-sm"
+                      onClick={() => setShowDestinationDetails((prev) => !prev)}
+                    >
+                      {showDestinationDetails ? 'Hide Details' : 'Show Details'}
+                    </button>
+                  )}
+                  {destination && showDestinationDetails && (
+                    <div className="mt-2 p-4 bg-blue-50 rounded-lg border border-blue-100 text-sm text-gray-700">
+                      <div><strong>Name:</strong> {destination.name}</div>
+                      <div><strong>City:</strong> {destination.city}</div>
+                      <div><strong>Country:</strong> {destination.country}</div>
+                      {destination.description && (
+                        <div className="mt-2"><strong>Description:</strong> {destination.description}</div>
+                      )}
+                      {destination.image && (
+                        <div className="mt-2">
+                          <Image src={destination.image} alt={destination.name} width={320} height={180} className="rounded-md object-cover" />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 
                 {packageDetails.available_from && (
