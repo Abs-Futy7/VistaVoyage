@@ -1,18 +1,69 @@
 from sqlmodel import Session, select
 from sqlalchemy.exc import SQLAlchemyError
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 from ..models.promo_code import PromoCode
 from ..models.offer import Offer
-from ..schemas.promo_code_schemas import PromoCodeValidationResponseModel
+from ..schemas.promo_code_schemas import PromoCodeValidationResponseModel, PromoCodeResponseModel
 import uuid
+from sqlalchemy import func
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 
 class PromoCodeService:
     """Service for handling promo code operations."""
-    
+
     @staticmethod
-    def validate_promo_code(
-        session: Session,
+    async def get_all_promo_codes(
+        session: AsyncSession,
+        page: int = 1,
+        limit: int = 10,
+        active_only: bool = True
+    ) -> Tuple[List[PromoCodeResponseModel], int]:
+        """
+        Get all promo codes with pagination and optional active filter.
+        
+        Args:
+            session: Database session
+            page: Page number for pagination
+            limit: Number of promo codes per page
+            active_only: Filter for active promo codes
+            
+        Returns:
+            Tuple of (list of PromoCode, total count)
+        """
+        try:
+            statement = (
+                select(PromoCode)
+                .options(selectinload(PromoCode.offer))
+                .order_by(PromoCode.created_at.desc())
+            )
+            if active_only:
+                statement = statement.where(PromoCode.is_active == True)
+            total_count = (await session.exec(select(func.count(PromoCode.id)))).one()
+            total_count = total_count[0] if isinstance(total_count, tuple) else total_count
+            offset = (page - 1) * limit
+            statement = statement.offset(offset).limit(limit)
+            promo_codes = (await session.exec(statement)).all()
+            promo_codes_serialized = []
+            for pc in promo_codes:
+                promo_dict = pc.__dict__.copy()
+                if hasattr(pc, 'offer') and pc.offer:
+                    offer = pc.offer
+                    promo_dict['offer_id'] = offer.id
+                promo_dict['discount_type'] = getattr(pc, 'discount_type', None)
+                promo_dict['discount_value'] = getattr(pc, 'discount_value', None)
+                promo_dict['is_valid'] = getattr(pc, 'is_valid', True)
+                promo_dict['remaining_uses'] = getattr(pc, 'remaining_uses', None)
+                promo_codes_serialized.append(PromoCodeResponseModel.model_validate(promo_dict))
+            return promo_codes_serialized, total_count
+        except SQLAlchemyError as e:
+            await session.rollback()
+            raise e
+
+    @staticmethod
+    async def validate_promo_code(
+        session: AsyncSession,
         code: Optional[str] = None,
         promo_code_id: Optional[uuid.UUID] = None,
         booking_amount: float = 0.0,
@@ -32,12 +83,11 @@ class PromoCodeService:
             PromoCodeValidationResponseModel with validation results
         """
         try:
-            # Find promo code
-            promo_code = None
+            statement = select(PromoCode).options(selectinload(PromoCode.offer))
             if code:
-                promo_code = PromoCodeService._get_promo_code_by_string(session, code)
+                statement = statement.where(PromoCode.code == code.upper())
             elif promo_code_id:
-                promo_code = PromoCodeService._get_promo_code_by_id(session, promo_code_id)
+                statement = statement.where(PromoCode.id == promo_code_id)
             else:
                 return PromoCodeValidationResponseModel(
                     is_valid=False,
@@ -45,7 +95,7 @@ class PromoCodeService:
                     discount_amount=0.0,
                     final_amount=booking_amount
                 )
-            
+            promo_code = (await session.exec(statement)).first()
             if not promo_code:
                 return PromoCodeValidationResponseModel(
                     is_valid=False,
@@ -53,44 +103,39 @@ class PromoCodeService:
                     discount_amount=0.0,
                     final_amount=booking_amount
                 )
-            
-            # Check if promo code is valid
-            if not promo_code.is_valid:
-                reasons = []
-                if not promo_code.is_active:
-                    reasons.append("inactive")
-                if not promo_code.offer.is_valid:
-                    reasons.append("offer expired")
-                if promo_code.max_usage and promo_code.current_usage >= promo_code.max_usage:
-                    reasons.append("usage limit reached")
-                
+            # Check validity
+            is_valid = promo_code.is_active and (not promo_code.expiry_date or promo_code.expiry_date >= func.now())
+            if not is_valid:
                 return PromoCodeValidationResponseModel(
                     is_valid=False,
-                    message=f"Promo code is {', '.join(reasons)}",
+                    message="Promo code is inactive or expired",
                     discount_amount=0.0,
                     final_amount=booking_amount,
                     promo_code_id=promo_code.id,
-                    offer_title=promo_code.offer.title,
-                    remaining_uses=promo_code.remaining_uses
+                    offer_title=getattr(promo_code.offer, 'title', None),
+                    remaining_uses=getattr(promo_code, 'remaining_uses', None)
                 )
-            
             # Calculate discount
-            discount_amount, final_amount = PromoCodeService._calculate_discount(
-                promo_code.offer, booking_amount
-            )
-            
+            discount_amount = 0.0
+            if promo_code.discount_type == "percentage":
+                discount_amount = (booking_amount * (promo_code.discount_value or 0)) / 100
+                if promo_code.maximum_discount:
+                    discount_amount = min(discount_amount, promo_code.maximum_discount)
+            elif promo_code.discount_type == "fixed":
+                discount_amount = min(promo_code.discount_value or 0.0, booking_amount)
+            final_amount = max(0.0, booking_amount - discount_amount)
             return PromoCodeValidationResponseModel(
                 is_valid=True,
                 message="Promo code is valid",
                 discount_amount=discount_amount,
-                discount_percentage=promo_code.offer.discount_percentage,
+                discount_percentage=promo_code.discount_value if promo_code.discount_type == "percentage" else None,
                 final_amount=final_amount,
                 promo_code_id=promo_code.id,
-                offer_title=promo_code.offer.title,
-                remaining_uses=promo_code.remaining_uses
+                offer_title=getattr(promo_code.offer, 'title', None),
+                remaining_uses=getattr(promo_code, 'remaining_uses', None)
             )
-            
         except SQLAlchemyError as e:
+            await session.rollback()
             return PromoCodeValidationResponseModel(
                 is_valid=False,
                 message=f"Database error: {str(e)}",

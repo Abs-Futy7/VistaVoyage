@@ -1,116 +1,179 @@
 "use client";
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, Loader2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import DestinationCard from "@/components/ui/DestinationCard";
-import { mockDestinations } from "@/utils/contants";
-import { Search, Globe, Filter } from 'lucide-react';
-import { SetStateAction, useEffect, useState } from "react";
-import { Button } from "@/components/ui/moving-border";
+import { destinationService, Destination, DestinationSearchFilters } from "@/lib/api/services/destinations";
+import { toast } from "sonner";
 
-export default function DestinationsPage() {
+// Define a type for destinations that have guaranteed imageUrl
+type DestinationWithImageUrl = Omit<Destination, 'imageUrl'> & { imageUrl: string };
+
+function DestinationsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [region, setRegion] = useState("all");
-  const [filteredDestinations, setFilteredDestinations] = useState(mockDestinations);
+  const [destinations, setDestinations] = useState<DestinationWithImageUrl[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
-  const filtered = mockDestinations.filter((dest) => {
-    const searchMatch =
-      searchTerm === "" ||
-      dest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dest.country.toLowerCase().includes(searchTerm.toLowerCase());
+    fetchDestinations();
+  }, [searchTerm, region, page]);
 
-    const regionMatch =
-      region === "all" ||
-      dest.region?.toLowerCase() === region.toLowerCase();
+  const fetchDestinations = async () => {
+    try {
+      setLoading(true);
+      const filters: DestinationSearchFilters = {
+        ...(searchTerm && { search: searchTerm }),
+        ...(region !== "all" && { region }),
+      };
+      const response = await destinationService.getAllDestinations(page, 12, filters);
+      const transformedDestinations: DestinationWithImageUrl[] = response.destinations.map((destination) => ({
+        ...destination,
+        imageUrl: destination.featured_image || destination.image || "https://via.placeholder.com/300", // Ensure imageUrl is always a string
+      }));
+      if (page === 1) {
+        setDestinations(transformedDestinations);
+      } else {
+        setDestinations((prev) => [...prev, ...transformedDestinations]);
+      }
+      setTotalPages(response.total_pages);
+      setHasMore(page < response.total_pages);
+    } catch (error: any) {
+      console.error("Failed to fetch destinations:", error);
+      toast.error("Failed to load destinations", {
+        description: error.message || "Please try again",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return searchMatch && regionMatch;
-  });
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    setPage(1);
+  };
 
-  setFilteredDestinations(filtered);
-}, [searchTerm, region]);
+  const handleRegionChange = (region: string) => {
+    setRegion(region);
+    setPage(1);
+  };
+
+  const loadMore = () => {
+    if (hasMore && !loading) {
+      setPage((prev) => prev + 1);
+    }
+  };
 
   return (
-    <section className="min-h-screen ">
-      <div className="bg-gradient-to-tl from-blue-500 to-indigo-600 text-white py-16 text-center">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 className="font-[Bebas_Neue] text-5xl md:text-6xl font-headline font-bold text-white mb-4">
-              Explore Destinations
-            </h1>
-            <p className="text-lg text-white max-w-2xl mx-auto">
-              Discover vibrant cultures, stunning landscapes, and unforgettable adventures around the world.
-            </p>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-        {/* Filter Bar */}
-        <div className="mb-8 p-6 bg-gradient-to-t from-white to-blue-300/50 rounded-lg shadow-md flex flex-col md:flex-row gap-4 items-end">
-            <div className="relative flex-grow w-full md:w-auto">
-                <label htmlFor="destination-search" className="block text-sm font-medium text-gray-700 mb-1">
-                  Search Destinations
-                </label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input 
-                    id="destination-search"
-                    type="text" 
-                    placeholder="Search by name, country..." 
-                    className="pl-10 h-11 bg-gray-100 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200"
-                    value={searchTerm}
-                    onChange={(e: { target: { value: SetStateAction<string>; }; }) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-            </div>
-            <div className="w-full md:w-auto">
-              <label htmlFor="region-filter" className="block text-sm font-medium text-gray-700 mb-1">
-                Filter by Region
-              </label>
-              <Select value={region} onValueChange={setRegion}>
-                  <SelectTrigger id="region-filter" className="h-12 w-full md:w-[200px] bg-gray-100 border border-gray-300 rounded-lg">
-                    <SelectValue placeholder="All Regions" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Regions</SelectItem>
-                    <SelectItem value="asia">Asia</SelectItem>
-                    <SelectItem value="europe">Europe</SelectItem>
-                    <SelectItem value="north-america">North America</SelectItem>
-                    <SelectItem value="south-america">South America</SelectItem>
-                    <SelectItem value="africa">Africa</SelectItem>
-                    <SelectItem value="oceania">Oceania</SelectItem>
-                  </SelectContent>
-              </Select>
-            </div>
-            
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Destinations</h1>
+          <p className="text-gray-600">
+            Discover vibrant cultures, stunning landscapes, and unforgettable adventures.
+          </p>
         </div>
 
-        {/* Destination Grid */}
-        {filteredDestinations.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            {filteredDestinations.map((dest) => (
-              <DestinationCard key={dest.id} destination={dest} />
-            ))}
+        {/* Search and Filter Section */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search destinations..."
+                value={searchTerm}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Region Filter */}
+            <Select value={region} onValueChange={handleRegionChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Region" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Regions</SelectItem>
+                <SelectItem value="asia">Asia</SelectItem>
+                <SelectItem value="europe">Europe</SelectItem>
+                <SelectItem value="north-america">North America</SelectItem>
+                <SelectItem value="south-america">South America</SelectItem>
+                <SelectItem value="africa">Africa</SelectItem>
+                <SelectItem value="oceania">Oceania</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Results */}
+        {loading && destinations.length === 0 ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-500" />
+              <p className="mt-2 text-gray-600">Loading destinations...</p>
+            </div>
           </div>
         ) : (
-          <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-            <div className="max-w-md mx-auto">
-              <p className="text-xl text-gray-600 mb-6">
-                No destinations found matching your criteria.
-              </p>
-              <button 
-                onClick={() => {
-                  setSearchTerm("");
-                  setRegion("all");
-                  setFilteredDestinations(mockDestinations);
-                }}
-                className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors duration-200 shadow-md"
-              >
-                Reset Filters
-              </button>
-            </div>
-          </div>
+          <>
+            {/* Destination Grid */}
+            {destinations.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {destinations.map((destination) => (
+                  <DestinationCard key={destination.id} destination={destination} />
+                ))}
+              </div>
+            ) : (
+              <div className="py-16 text-center">
+                <p className="text-2xl text-gray-600 mb-4">No destinations found</p>
+                <p className="text-gray-500 mb-8">Try adjusting your search criteria</p>
+                <button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setRegion("all");
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+                >
+                  Reset Filters
+                </button>
+              </div>
+            )}
+
+            {/* Load More Button */}
+            {hasMore && (
+              <div className="mt-8 text-center">
+                <button
+                  onClick={loadMore}
+                  disabled={loading}
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5" />
+                      Loading...
+                    </>
+                  ) : (
+                    "Load More Destinations"
+                  )}
+                </button>
+              </div>
+            )}
+          </>
         )}
-        
       </div>
-    </section>
+    </div>
   );
 }
+
+export default DestinationsPage;

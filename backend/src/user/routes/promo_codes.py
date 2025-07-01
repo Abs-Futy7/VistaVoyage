@@ -6,11 +6,41 @@ from typing import Optional
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from ...db.main import get_session
-from ...schemas.promo_code_schemas import PromoCodeValidationModel, PromoCodeValidationResponseModel
+from ...schemas.promo_code_schemas import (
+    PromoCodeValidationModel,
+    PromoCodeValidationResponseModel,
+    PromoCodeResponseModel
+)
 from ...services.promo_code_service import PromoCodeService
 from ...auth.dependencies import get_current_user
 
 promo_codes_router = APIRouter()
+
+
+@promo_codes_router.get("/promo_codes")
+async def get_promo_codes(
+    session: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user)
+):
+    """
+    Get promo codes by code string.
+    
+    This endpoint allows users to search for a specific promo code
+    by its code string. If no code is provided, it returns all active promo codes.
+    """
+    try:
+        promo_codes, total_count = await PromoCodeService.get_all_promo_codes(
+            session=session,
+        )
+        return {
+            "promo_codes": promo_codes,
+            "total_count": total_count
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error fetching promo codes: {str(e)}"
+        )
 
 
 @promo_codes_router.post("/validate", response_model=PromoCodeValidationResponseModel)
@@ -26,18 +56,14 @@ async def validate_promo_code(
     Returns validation result with discount information.
     """
     try:
-        # Convert async session to sync session for promo code service
-        sync_session = session.sync_session
-        
-        validation_result = PromoCodeService.validate_promo_code(
-            session=sync_session,
+        result = await PromoCodeService.validate_promo_code(
+            session=session,
             code=validation_data.code,
             promo_code_id=validation_data.promo_code_id,
             booking_amount=validation_data.booking_amount,
             package_id=validation_data.package_id
         )
-        
-        return validation_result
+        return result
         
     except Exception as e:
         raise HTTPException(
@@ -61,29 +87,23 @@ async def check_promo_code_quick(
     a promo code without sending a full validation request.
     """
     try:
-        # Convert async session to sync session for promo code service
-        sync_session = session.sync_session
-        
-        # Convert package_id to UUID if provided
         package_uuid = None
         if package_id:
+            import uuid
             try:
-                import uuid
                 package_uuid = uuid.UUID(package_id)
             except ValueError:
                 raise HTTPException(
                     status_code=400,
                     detail="Invalid package ID format"
                 )
-        
-        validation_result = PromoCodeService.validate_promo_code(
-            session=sync_session,
+        result = await PromoCodeService.validate_promo_code(
+            session=session,
             code=code,
             booking_amount=booking_amount,
             package_id=package_uuid
         )
-        
-        return validation_result
+        return result
         
     except HTTPException:
         raise
