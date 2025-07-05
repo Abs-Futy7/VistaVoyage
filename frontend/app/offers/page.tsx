@@ -350,9 +350,6 @@ function OfferPage() {
                           ${offer.discount_amount ? offer.discount_amount.toFixed(2) : "799.99"}
                         </span>
                       </div>
-                      <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors font-semibold">
-                        Book Now
-                      </button>
                     </div>
                   </div>
                 </div>
