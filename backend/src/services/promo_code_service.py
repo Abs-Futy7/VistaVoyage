@@ -1,6 +1,7 @@
 from sqlmodel import Session, select
 from sqlalchemy.exc import SQLAlchemyError
 from typing import Optional, Tuple, List
+from datetime import datetime
 from ..models.promo_code import PromoCode
 from ..models.offer import Offer
 from ..schemas.promo_code_schemas import PromoCodeValidationResponseModel, PromoCodeResponseModel
@@ -104,11 +105,35 @@ class PromoCodeService:
                     final_amount=booking_amount
                 )
             # Check validity
-            is_valid = promo_code.is_active and (not promo_code.expiry_date or promo_code.expiry_date >= func.now())
+            current_date = datetime.utcnow().date()
+            is_valid = (promo_code.is_active and 
+                       (not promo_code.start_date or promo_code.start_date <= current_date) and
+                       (not promo_code.expiry_date or promo_code.expiry_date >= current_date))
+            
+            # Check usage limits
+            if is_valid and hasattr(promo_code, 'max_uses') and promo_code.max_uses is not None:
+                if hasattr(promo_code, 'current_uses') and promo_code.current_uses is not None:
+                    if promo_code.current_uses >= promo_code.max_uses:
+                        is_valid = False
+            
             if not is_valid:
+                message = "Promo code is inactive"
+                if not promo_code.is_active:
+                    message = "Promo code is inactive"
+                elif promo_code.start_date and promo_code.start_date > current_date:
+                    message = "Promo code is not yet active"
+                elif promo_code.expiry_date and promo_code.expiry_date < current_date:
+                    message = "Promo code has expired"
+                
+                # Check usage limits for more specific message
+                if hasattr(promo_code, 'max_uses') and promo_code.max_uses is not None:
+                    if hasattr(promo_code, 'current_uses') and promo_code.current_uses is not None:
+                        if promo_code.current_uses >= promo_code.max_uses:
+                            message = "Promo code has reached its usage limit"
+                
                 return PromoCodeValidationResponseModel(
                     is_valid=False,
-                    message="Promo code is inactive or expired",
+                    message=message,
                     discount_amount=0.0,
                     final_amount=booking_amount,
                     promo_code_id=promo_code.id,

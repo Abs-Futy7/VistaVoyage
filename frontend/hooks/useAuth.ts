@@ -84,14 +84,30 @@ export function useAuth() {
 
   const logout = async () => {
     try {
+      setIsLoading(true);
       await authService.logout();
       setUser(null);
       setIsAuthenticated(false);
+      
+      // Show success message
+      console.log('✅ Successfully logged out and cleared all tokens');
+      
+      // Redirect to home page after logout
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
     } catch (error) {
       console.error('Logout failed:', error);
       // Still clear local state even if API call fails
       setUser(null);
       setIsAuthenticated(false);
+      
+      // Redirect to home page even if logout API fails
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 

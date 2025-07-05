@@ -7,32 +7,16 @@ import { IoIosMenu } from 'react-icons/io';
 import { RxCross2 } from 'react-icons/rx';
 import { User, LogOut, Settings, ChevronDown, Heart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
+import { LogoutButton } from './auth/LogoutButton';
 
 function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileAccountOpen, setMobileAccountOpen] = useState(false);
   const router = useRouter();
   const userMenuRef = useRef<HTMLDivElement>(null);
-  
-  // Check authentication status on component mount and when storage changes
-  useEffect(() => {
-    const checkAuth = () => {
-      const auth = localStorage.getItem("isAuthenticated") === "true";
-      setIsAuthenticated(auth);
-    };
-    
-    // Check on mount
-    checkAuth();
-    
-    // Listen for storage events (triggered by login/logout)
-    window.addEventListener("storage", checkAuth);
-    
-    return () => {
-      window.removeEventListener("storage", checkAuth);
-    };
-  }, []);
+  const { isAuthenticated, isLoading } = useAuth();
   
   // Handle clicks outside the user menu to close it
   useEffect(() => {
@@ -48,13 +32,8 @@ function Navbar() {
     };
   }, [userMenuRef]);
   
-  // Handle logout
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
-    setIsAuthenticated(false);
-    // Trigger storage event to update other components
-    window.dispatchEvent(new Event("storage"));
-    // Close menus
+  // Handle menu close
+  const handleMenuClose = () => {
     setUserMenuOpen(false);
     setMobileMenuOpen(false);
     setMobileAccountOpen(false);
@@ -115,13 +94,16 @@ function Navbar() {
                   Settings
                 </Link>
                 <hr className="my-1 border-gray-200" />
-                <button 
-                  onClick={handleLogout}
-                  className="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </button>
+                <div className="px-2 py-1">
+                  <LogoutButton 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-600 px-2 py-1 text-sm"
+                    showConfirmation={false}
+                  >
+                    Logout
+                  </LogoutButton>
+                </div>
               </div>
             )}
           </div>
@@ -202,13 +184,16 @@ function Navbar() {
                     <Settings className="h-4 w-4 mr-2" />
                     Settings
                   </Link>
-                  <button
-                    onClick={handleLogout}
-                    className='flex w-full items-center text-red-600 px-2 py-2 hover:bg-red-50 rounded-md'
-                  >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Logout
-                  </button>
+                  <div className="px-2 py-1">
+                    <LogoutButton 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-600 px-0 py-1 text-sm"
+                      showConfirmation={false}
+                    >
+                      Logout
+                    </LogoutButton>
+                  </div>
                 </div>
               )}
             </div>

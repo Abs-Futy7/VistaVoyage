@@ -10,7 +10,7 @@ from .package_schemas import (
 from .booking_schemas import (
     BookingCreateModel, BookingUpdateModel, BookingStatusUpdateModel, 
     BookingResponseModel, BookingListResponseModel,
-    BookingStatusEnum, PaymentStatusEnum
+    BookingStatus, PaymentStatus, PromoValidationRequest, PromoValidationResponse
 )
 from .destination_schemas import (
     DestinationCreateModel, DestinationUpdateModel, 
@@ -58,8 +58,10 @@ __all__ = [
     "BookingStatusUpdateModel",
     "BookingResponseModel",
     "BookingListResponseModel",
-    "BookingStatusEnum",
-    "PaymentStatusEnum",
+    "BookingStatus",
+    "PaymentStatus",
+    "PromoValidationRequest",
+    "PromoValidationResponse",
     
     # Destination schemas
     "DestinationCreateModel",

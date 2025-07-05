@@ -2,6 +2,7 @@ from typing import Optional, List, Dict, Any
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, func
 from datetime import datetime
+from decimal import Decimal
 import uuid
 
 from ..models.booking import Booking
@@ -19,30 +20,37 @@ class BookingService:
         status: Optional[str] = None,
         user_id: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Get paginated list of bookings with filtering"""
+        """Get paginated list of bookings with filtering and joined data"""
+        from ..auth.models import User
+        from ..models.package import Package
         
-        # Build the query
-        statement = select(Booking)
+        # Build the query with joins for package and user data
+        statement = select(Booking, User, Package).join(
+            User, Booking.user_id == User.uid
+        ).join(
+            Package, Booking.package_id == Package.id
+        )
         
-        # Add filters
+        count_statement = select(func.count(Booking.id))
+        
+        # Add filters to both statements
         if status:
             statement = statement.where(Booking.status == status)
+            count_statement = count_statement.where(Booking.status == status)
         
         if user_id:
             statement = statement.where(Booking.user_id == user_id)
+            count_statement = count_statement.where(Booking.user_id == user_id)
         
         if search:
-            search_term = f"%{search}%"
-            statement = statement.where(
-                (Booking.customer_name.ilike(search_term)) |
-                (Booking.customer_email.ilike(search_term)) |
-                (Booking.id.ilike(search_term))
+            # Search in booking ID, package title, or user name
+            search_condition = (
+                Booking.id.ilike(f"%{search}%") |
+                Package.title.ilike(f"%{search}%") |
+                User.full_name.ilike(f"%{search}%")
             )
-        
-        # Get total count
-        count_statement = select(func.count(Booking.id))
-        if statement.whereclause is not None:
-            count_statement = count_statement.where(*statement.whereclause.clauses)
+            statement = statement.where(search_condition)
+            count_statement = count_statement.where(search_condition)
         
         total_result = await session.exec(count_statement)
         total = total_result.first() or 0
@@ -53,13 +61,50 @@ class BookingService:
         
         # Execute query
         result = await session.exec(statement)
-        bookings = result.all()
+        booking_data = result.all()
+        
+        # Format the results with joined data
+        bookings_with_details = []
+        for booking, user, package in booking_data:
+            booking_dict = {
+                "id": str(booking.id),
+                "package_id": str(booking.package_id),
+                "user_id": str(booking.user_id),
+                "promo_code_id": str(booking.promo_code_id) if booking.promo_code_id else None,
+                "status": booking.status,
+                "payment_status": booking.payment_status,
+                "total_amount": float(booking.total_amount),
+                "paid_amount": float(booking.paid_amount),
+                "discount_amount": float(booking.discount_amount),
+                "booking_date": booking.booking_date.isoformat() if booking.booking_date else None,
+                "cancellation_date": booking.cancellation_date.isoformat() if booking.cancellation_date else None,
+                "cancellation_reason": booking.cancellation_reason,
+                "created_at": booking.created_at.isoformat(),
+                "updated_at": booking.updated_at.isoformat(),
+                
+                # Package information
+                "packageTitle": package.title,
+                "packageDescription": package.description,
+                "packagePrice": float(package.price),
+                
+                # User information
+                "user": {
+                    "id": str(user.uid),
+                    "fullName": user.full_name,
+                    "email": user.email,
+                    "phone": user.phone,
+                    "city": user.city,
+                    "country": user.country,
+                    "createdAt": user.created_at.isoformat()
+                }
+            }
+            bookings_with_details.append(booking_dict)
         
         # Calculate pagination info
         total_pages = (total + limit - 1) // limit
         
         return {
-            "bookings": [BookingResponseModel.model_validate(booking) for booking in bookings],
+            "bookings": bookings_with_details,
             "total": total,
             "page": page,
             "limit": limit,
@@ -72,6 +117,61 @@ class BookingService:
         result = await session.exec(statement)
         return result.first()
     
+    async def get_booking_details_for_admin(self, session: AsyncSession, booking_id: str) -> Optional[Dict[str, Any]]:
+        """Get booking details with user and package information for admin panel"""
+        from ..auth.models import User
+        from ..models.package import Package
+        
+        # Join booking with user and package data
+        statement = select(Booking, User, Package).join(
+            User, Booking.user_id == User.uid
+        ).join(
+            Package, Booking.package_id == Package.id
+        ).where(Booking.id == booking_id)
+        
+        result = await session.exec(statement)
+        booking_data = result.first()
+        
+        if not booking_data:
+            return None
+        
+        booking, user, package = booking_data
+        
+        # Format response with all necessary data
+        return {
+            "id": str(booking.id),
+            "package_id": str(booking.package_id),
+            "user_id": str(booking.user_id),
+            "promo_code_id": str(booking.promo_code_id) if booking.promo_code_id else None,
+            "status": booking.status,
+            "payment_status": booking.payment_status,
+            "total_amount": float(booking.total_amount),
+            "paid_amount": float(booking.paid_amount),
+            "discount_amount": float(booking.discount_amount),
+            "booking_date": booking.booking_date.isoformat() if booking.booking_date else None,
+            "cancellation_date": booking.cancellation_date.isoformat() if booking.cancellation_date else None,
+            "cancellation_reason": booking.cancellation_reason,
+            "created_at": booking.created_at.isoformat(),
+            "updated_at": booking.updated_at.isoformat(),
+            
+            # Package information
+            "packageTitle": package.title,
+            "packageDescription": package.description,
+            "packagePrice": float(package.price),
+            
+            # User information
+            "user": {
+                "id": str(user.uid),
+                "fullName": user.full_name,
+                "email": user.email,
+                "phone": user.phone,
+                "city": user.city,
+                "country": user.country,
+                "dateOfBirth": None,  # User model doesn't have date_of_birth field
+                "createdAt": user.created_at.isoformat()
+            }
+        }
+    
     async def validate_promo_code(
         self,
         session: AsyncSession,
@@ -81,9 +181,6 @@ class BookingService:
         package_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """Validate a promo code for a booking"""
-        
-        # Convert async session to sync session for promo code service
-        sync_session = session.sync_session
         
         # Convert string IDs to UUID if needed
         promo_uuid = None
@@ -106,8 +203,8 @@ class BookingService:
             except ValueError:
                 package_uuid = None
         
-        validation_result = PromoCodeService.validate_promo_code(
-            session=sync_session,
+        validation_result = await PromoCodeService.validate_promo_code(
+            session=session,
             code=code,
             promo_code_id=promo_uuid,
             booking_amount=booking_amount,
@@ -133,14 +230,18 @@ class BookingService:
         final_amount = booking_data.total_amount
         
         if booking_data.promo_code or booking_data.promo_code_id:
-            # Convert async session to sync session for promo code service
-            # Note: This is a temporary solution. Ideally, make PromoCodeService async
-            sync_session = session.sync_session
+            # Convert string IDs to UUID if needed
+            promo_uuid = None
+            if booking_data.promo_code_id:
+                try:
+                    promo_uuid = uuid.UUID(booking_data.promo_code_id)
+                except ValueError:
+                    promo_uuid = None
             
-            validation_result = PromoCodeService.validate_promo_code(
-                session=sync_session,
+            validation_result = await PromoCodeService.validate_promo_code(
+                session=session,
                 code=booking_data.promo_code,
-                promo_code_id=booking_data.promo_code_id,
+                promo_code_id=promo_uuid,
                 booking_amount=booking_data.total_amount
             )
             
@@ -149,8 +250,8 @@ class BookingService:
                 discount_amount = validation_result.discount_amount or 0.0
                 final_amount = validation_result.final_amount or booking_data.total_amount
                 
-                # Mark promo code as used
-                PromoCodeService.use_promo_code(sync_session, promo_code_id)
+                # Mark promo code as used (use sync session for this specific call)
+                PromoCodeService.use_promo_code(session.sync_session, promo_code_id)
         
         # Create booking object - ID will be auto-generated by the model
         booking_dict = booking_data.model_dump(exclude={'promo_code'})  # Exclude promo_code string
@@ -248,6 +349,41 @@ class BookingService:
             stats[status.value] = count_result.first() or 0
         
         return stats
+    
+    async def make_payment(
+        self,
+        session: AsyncSession,
+        booking_id: str,
+        payment_data: Dict[str, Any],
+        user_id: str
+    ) -> Optional[Booking]:
+        """Process payment for a booking"""
+        
+        booking = await self.get_booking_by_id(session, booking_id)
+        if not booking:
+            return None
+        
+        # Verify booking belongs to the user
+        if str(booking.user_id) != str(user_id):
+            return None
+        
+        # Check if payment is already made
+        if booking.payment_status != 'pending':
+            return None
+        
+        # Update payment details
+        payment_amount = Decimal(str(payment_data.get('amount', 0.0)))
+        booking.paid_amount += payment_amount
+        booking.payment_status = 'completed' if booking.paid_amount >= booking.total_amount else 'partial'
+        
+        # Update timestamp
+        booking.updated_at = datetime.now()
+        
+        session.add(booking)
+        await session.commit()
+        await session.refresh(booking)
+        
+        return booking
 
 
 # Create singleton instance

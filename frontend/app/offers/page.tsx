@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import Image from "next/image";
 import Link from "next/link";
 import {
   Search,
@@ -26,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { offerService, Offer } from "@/lib/api/services/offers";
 import { promoCodeService, PromoCode } from "@/lib/api/services/promocode";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 function OfferPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -310,57 +310,47 @@ function OfferPage() {
                 transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
               >
-                <div className="relative">
-                  <div className="h-56 w-full relative overflow-hidden">
-                    <Image
-                      src={"/images/offer-default.jpg"}
-                      alt={offer.title}
-                      fill
-                      className="object-cover transition-transform duration-700 hover:scale-110"
-                    />
-                  </div>
-                  <div className="absolute top-4 right-4 bg-red-600 text-white px-3 py-1.5 rounded-full font-bold transform rotate-3 shadow-lg">
-                    {offer.discount_percentage}% OFF
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent">
-                    <div className="flex items-center text-white mb-1">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      <span className="text-sm">{offer.destination || "-"}</span>
+                <div className="p-5 flex flex-col h-full bg-gradient-to-br from-blue-50 to-indigo-100 border-l-4 border-blue-600">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="bg-red-600 text-white px-3 py-1.5 rounded-full font-bold text-sm shadow-lg">
+                      {offer.discount_percentage}% OFF
                     </div>
-                    <h3 className="text-3xl text-white font-[Bebas_Neue] ">{offer.title}</h3>
+                    <div className="flex items-center text-gray-600">
+                      <MapPin className="h-4 w-4 mr-1" />
+                      <span className="text-sm">{offer.destination || "Global"}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="p-5 flex-grow bg-gradient-to-t from-white to-blue-200">
-                  <div className="flex items-center justify-between mb-3 ">
+                  <h3 className="text-2xl font-bold text-gray-800 mb-3 font-[Bebas_Neue]">{offer.title}</h3>
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center text-sm text-gray-600">
                       <Clock className="h-4 w-4 mr-1.5" />
                       <span>
                         {offer.valid_from && offer.valid_until
                           ? `${new Date(offer.valid_from).toLocaleDateString()} - ${new Date(offer.valid_until).toLocaleDateString()}`
-                          : "-"}
+                          : "Limited Time"}
                       </span>
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <Calendar className="h-4 w-4 mr-1.5" />
                       <span>
-                        Until {offer.valid_until ? new Date(offer.valid_until).toLocaleDateString() : "-"}
+                        Until {offer.valid_until ? new Date(offer.valid_until).toLocaleDateString() : "TBD"}
                       </span>
                     </div>
                   </div>
-                  <p className="text-gray-600 mb-4 line-clamp-2">
-                    {offer.description}
+                  <p className="text-gray-600 mb-4 flex-grow">
+                    {offer.description || "Special limited-time offer with great savings!"}
                   </p>
                   <div className="mt-auto">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between">
                       <div className="flex flex-col">
                         <span className="text-gray-500 line-through text-sm">
-                          ${offer.discount_amount ? offer.discount_amount + offer.discount_percentage * 10 : "-"}
+                          ${offer.discount_amount ? (offer.discount_amount + (offer.discount_percentage || 0) * 10).toFixed(2) : "999.99"}
                         </span>
                         <span className="text-2xl font-bold text-blue-600">
-                          ${offer.discount_amount || 0}
+                          ${offer.discount_amount ? offer.discount_amount.toFixed(2) : "799.99"}
                         </span>
                       </div>
-                      <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                      <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors font-semibold">
                         Book Now
                       </button>
                     </div>
@@ -385,4 +375,10 @@ function OfferPage() {
   );
 }
 
-export default OfferPage;
+export default function OfferPageWithAuth() {
+  return (
+    <ProtectedRoute message="You need to login to view exclusive offers and promo codes">
+      <OfferPage />
+    </ProtectedRoute>
+  );
+}

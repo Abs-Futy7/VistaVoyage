@@ -111,9 +111,6 @@ class Admin(SQLModel, table=True):
             nullable=False
         )
     )
-    
-    # Relationships
-    blogs: List["Blog"] = Relationship(back_populates="author")
 
     def __repr__(self):
         return f"<Admin {self.username}>"

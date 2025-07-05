@@ -10,7 +10,8 @@ from ...schemas.booking_schemas import (
     BookingCreateModel, 
     BookingUpdateModel, 
     BookingResponseModel, 
-    BookingListResponseModel
+    BookingListResponseModel,
+    PaymentRequestModel
 )
 from ...services.booking_service import booking_service
 from ...auth.dependencies import get_current_user
@@ -143,3 +144,36 @@ async def get_booking(
             status_code=500,
             detail=f"Error fetching booking: {str(e)}"
         )
+
+@booking_router.patch("/bookings/{booking_id}/payment")
+async def make_payment(
+    booking_id: str,
+    payment_data: PaymentRequestModel,
+    session: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user)
+):
+    """Make a payment for a booking"""
+    try:
+        booking = await booking_service.make_payment(
+            session=session,
+            booking_id=booking_id,
+            payment_data=payment_data.model_dump(),
+            user_id=str(current_user.uid)
+        )
+        
+        if not booking:
+            raise HTTPException(
+                status_code=404,
+                detail="Booking not found"
+            )
+        
+        return BookingResponseModel.model_validate(booking)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing payment: {str(e)}"
+        )
+    

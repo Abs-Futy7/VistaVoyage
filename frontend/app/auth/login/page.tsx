@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardTitle,
@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { LogIn, Mail, Lock, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
@@ -21,7 +21,11 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login } = useAuth();
+  
+  // Get return URL from query params
+  const returnUrl = searchParams.get('return') || '/';
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +39,8 @@ function LoginPage() {
         icon: <Check className="h-4 w-4" />,
       });
       
-      router.push("/"); // Redirect to homepage
+      // Redirect to return URL or homepage
+      router.push(returnUrl);
     } catch (error: any) {
       console.error('Login error:', error);
       

@@ -7,11 +7,13 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Search } from 'lucide-react';
 import { useAdminBookings } from '@/hooks/useAdmin';
+import { useRouter } from 'next/navigation';
 import { toast } from "sonner";
 
 function AdminBookingManagePage() {
   const { bookings, loading, error, updateBookingStatus, search, filterByStatus, refetch } = useAdminBookings();
   const [statusFilter, setStatusFilter] = useState('');
+  const router = useRouter();
 
   const handleStatusChange = async (bookingId: string, newStatus: string) => {
     await updateBookingStatus(bookingId, newStatus);
@@ -20,6 +22,10 @@ function AdminBookingManagePage() {
   const handleStatusFilter = (status: string) => {
     setStatusFilter(status);
     filterByStatus(status === 'All' ? '' : status.toLowerCase());
+  };
+
+  const handleViewDetails = (bookingId: string) => {
+    router.push(`/admin/bookings/${bookingId}`);
   };
 
   if (loading) {
@@ -75,40 +81,14 @@ function AdminBookingManagePage() {
         <div className="text-center">
           <h2 className="text-xl font-semibold text-gray-900">Error loading bookings</h2>
           <p className="text-gray-600 mt-2">{error}</p>
+          <Button onClick={refetch} className="mt-4">
+            Try Again
+          </Button>
         </div>
       </div>
     );
   }
 
-  // Demo data if no API data
-  const demoBookings = [
-    {
-      id: "#BK-8441",
-      packageTitle: "Bali Adventure Package",
-      customerName: "Peterson Jack",
-      createdAt: "2025-06-27",
-      totalAmount: 1299,
-      status: "confirmed"
-    },
-    {
-      id: "#BK-2657",
-      packageTitle: "Paris Getaway",
-      customerName: "Michel Datta",
-      createdAt: "2025-06-26",
-      totalAmount: 1899,
-      status: "pending"
-    },
-    {
-      id: "#BK-1024",
-      packageTitle: "Tokyo Explorer",
-      customerName: "Jesiya Rose",
-      createdAt: "2025-06-20",
-      totalAmount: 2499,
-      status: "cancelled"
-    }
-  ];
-
-  const bookingList = bookings || demoBookings;
   return (
     <div className="mt-6 space-y-6">
       {/* Bookings Tab */}
@@ -158,55 +138,73 @@ function AdminBookingManagePage() {
                 </tr>
               </thead>
               <tbody>
-                {bookingList.map((booking: any, index: number) => (
-                  <tr key={index} className="border-b border-gray-100 text-sm hover:bg-gray-50">
-                    <td className="py-4 pl-6 font-medium">{booking.id}</td>
-                    <td className="py-4">{booking.packageTitle}</td>
-                    <td className="py-4">{booking.customerName}</td>
-                    <td className="py-4">{new Date(booking.createdAt).toLocaleDateString()}</td>
-                    <td className="py-4 font-medium">${booking.totalAmount?.toLocaleString()}</td>
-                    <td className="py-4">
-                      <Badge
-                        variant="outline"
-                        className={
-                          booking.status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200' : 
-                          booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 
-                          booking.status === 'completed' ? 'bg-blue-100 text-blue-700 border-blue-200' : 
-                          'bg-red-100 text-red-700 border-red-200'
+                {bookings && bookings.length > 0 ? (
+                  bookings.map((booking: any, index: number) => (
+                    <tr key={booking.id || index} className="border-b border-gray-100 text-sm hover:bg-gray-50">
+                      <td className="py-4 pl-6 font-medium">{booking.id}</td>
+                      <td className="py-4">{booking.packageTitle || 'N/A'}</td>
+                      <td className="py-4">{booking.user?.fullName || 'N/A'}</td>
+                      <td className="py-4">
+                        {booking.created_at ? 
+                          new Date(booking.created_at).toLocaleDateString() : 
+                          'N/A'
                         }
-                      >
-                        {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                      </Badge>
-                    </td>
-                    <td className="py-4 text-right pr-6">
-                      <div className="flex justify-end space-x-2">
-                        <Button variant="ghost" size="sm">
-                          Details
-                        </Button>
-                        {booking.status === 'pending' && (
+                      </td>
+                      <td className="py-4 font-medium">${booking.total_amount?.toLocaleString() || 0}</td>
+                      <td className="py-4">
+                        <Badge
+                          variant="outline"
+                          className={
+                            booking.status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200' : 
+                            booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 
+                            booking.status === 'completed' ? 'bg-blue-100 text-blue-700 border-blue-200' : 
+                            'bg-red-100 text-red-700 border-red-200'
+                          }
+                        >
+                          {booking.status?.charAt(0).toUpperCase() + booking.status?.slice(1) || 'Unknown'}
+                        </Badge>
+                      </td>
+                      <td className="py-4 text-right pr-6">
+                        <div className="flex justify-end space-x-2">
                           <Button 
                             variant="ghost" 
-                            size="sm" 
-                            className="text-green-600 hover:text-green-700"
-                            onClick={() => handleStatusChange(booking.id, 'confirmed')}
+                            size="sm"
+                            onClick={() => handleViewDetails(booking.id)}
+                            className="text-blue-600 hover:text-blue-700"
                           >
-                            Confirm
+                            Details
                           </Button>
-                        )}
-                        {(booking.status === 'confirmed' || booking.status === 'pending') && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-red-600 hover:text-red-700"
-                            onClick={() => handleStatusChange(booking.id, 'cancelled')}
-                          >
-                            Cancel
-                          </Button>
-                        )}
-                      </div>
+                          {booking.status === 'pending' && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-green-600 hover:text-green-700"
+                              onClick={() => handleStatusChange(booking.id, 'confirmed')}
+                            >
+                              Confirm
+                            </Button>
+                          )}
+                          {(booking.status === 'confirmed' || booking.status === 'pending') && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-red-600 hover:text-red-700"
+                              onClick={() => handleStatusChange(booking.id, 'cancelled')}
+                            >
+                              Cancel
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-gray-500">
+                      No bookings found
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>

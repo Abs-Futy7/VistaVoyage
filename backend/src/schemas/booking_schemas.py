@@ -5,7 +5,7 @@ from enum import Enum
 import uuid
 
 
-class BookingStatusEnum(str, Enum):
+class BookingStatus(str, Enum):
     PENDING = "pending"
     CONFIRMED = "confirmed"
     CANCELLED = "cancelled"
@@ -13,7 +13,7 @@ class BookingStatusEnum(str, Enum):
     REFUNDED = "refunded"
 
 
-class PaymentStatusEnum(str, Enum):
+class PaymentStatus(str, Enum):
     PENDING = "pending"
     PAID = "paid"
     PARTIALLY_PAID = "partially_paid"
@@ -34,9 +34,26 @@ class BookingCreateModel(BaseModel):
         return v
 
 
+class PromoValidationRequest(BaseModel):
+    code: Optional[str] = None
+    promo_code_id: Optional[uuid.UUID] = None
+    booking_amount: float = Field(gt=0)
+    package_id: Optional[uuid.UUID] = None
+
+
+class PromoValidationResponse(BaseModel):
+    valid: bool
+    promo_code_id: Optional[uuid.UUID] = None
+    discount_amount: float = 0.0
+    discount_percentage: Optional[float] = None
+    final_amount: float
+    message: str
+    promo_code: Optional[str] = None
+
+
 class BookingUpdateModel(BaseModel):
-    status: Optional[str] = None
-    payment_status: Optional[str] = None
+    status: Optional[BookingStatus] = None
+    payment_status: Optional[PaymentStatus] = None
     total_amount: Optional[float] = Field(None, gt=0)
     paid_amount: Optional[float] = Field(None, ge=0)
     discount_amount: Optional[float] = Field(None, ge=0)
@@ -44,7 +61,7 @@ class BookingUpdateModel(BaseModel):
 
 
 class BookingStatusUpdateModel(BaseModel):
-    status: str = Field(min_length=1, max_length=20)
+    status: BookingStatus
 
 
 class BookingResponseModel(BaseModel):
@@ -63,6 +80,14 @@ class BookingResponseModel(BaseModel):
     created_at: datetime
     updated_at: datetime
     
+    # Package information (joined from backend)
+    packageTitle: Optional[str] = None
+    packageDescription: Optional[str] = None
+    packagePrice: Optional[float] = None
+    
+    # User information (joined from backend)
+    user: Optional[dict] = None
+    
     class Config:
         from_attributes = True
 
@@ -73,3 +98,9 @@ class BookingListResponseModel(BaseModel):
     page: int
     limit: int
     total_pages: int
+
+class PaymentRequestModel(BaseModel):
+    booking_id: uuid.UUID
+    amount: float = Field(gt=0, description="Amount to be paid")
+    payment_status: PaymentStatus = PaymentStatus.PENDING
+

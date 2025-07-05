@@ -25,7 +25,7 @@ password_context = CryptContext(
     deprecated="auto"
 )
 
-ACCESS_TOKEN_EXPIRY = 3600  # 1 hour
+ACCESS_TOKEN_EXPIRY = 2 * 60 * 60  # 2 hours
 
 def generate_hash_password(password: str) -> str:
      

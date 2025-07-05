@@ -7,7 +7,7 @@ from typing import Optional, List, TYPE_CHECKING
 from enum import Enum
 
 if TYPE_CHECKING:
-    from ..admin.models import Admin
+    from ..auth.models import User
 
 
 class BlogStatus(str, Enum):
@@ -49,7 +49,7 @@ class Blog(SQLModel, table=True):
     author_id: uuid.UUID = Field(
         sa_column=Column(
             pg.UUID,
-            ForeignKey("admins.id"),
+            ForeignKey("users.uid"),
             nullable=False
         )
     )
@@ -134,7 +134,7 @@ class Blog(SQLModel, table=True):
     )
     
     # Relationships
-    author: "Admin" = Relationship(back_populates="blogs")
+    author: "User" = Relationship(back_populates="blogs")
 
     def __repr__(self):
         return f"<Blog {self.title}>"

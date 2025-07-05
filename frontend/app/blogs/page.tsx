@@ -2,21 +2,109 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, Layers, Tag, Link, X } from "lucide-react";
+import { Search, Layers, Tag, Link, X, Loader2 } from "lucide-react";
 import BlogCard from '@/components/BlogCard';
-import { mockBlogs } from '@/utils/contants';
+import { toast } from "sonner";
+import { blogService, Blog, BackendBlog, BlogListResponse, BlogSearchParams } from '@/lib/api/services/blog';
+import { ApiError } from '@/lib/api/types';
 
 function BlogsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [activeTags, setActiveTags] = useState<string[]>([]);
-  const [filteredBlogs, setFilteredBlogs] = useState(mockBlogs);
-  
-  // Categories and tags data
-  const categories = ["All", "Destinations", "Travel Tips", "Guides", "Experiences", "Photography"];
-  const tags = ["Adventure", "Culture", "Food", "Nature", "Tips"];
+  const [backendBlogs, setBackendBlogs] = useState<BackendBlog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pages: 1,
+    total: 0,
+    limit: 12
+  });
 
-  // Handle search input change
+  // Convert backend blogs to BlogCard format using blog service
+  const blogs: Blog[] = backendBlogs.map(blogService.convertBlogFormat);
+  
+  // Available categories from backend
+  const categories = [
+    "All", 
+    "Travel Guide", 
+    "Budget Travel", 
+    "Adventure", 
+    "Culture", 
+    "Food", 
+    "Tips", 
+    "Destination Review", 
+    "Travel Story"
+  ];
+  
+  const tags = ["Adventure", "Culture", "Food", "Nature", "Tips", "Budget", "Luxury", "Solo Travel"];
+
+  // Fetch blogs from backend using blog service
+  const fetchBlogs = async (page: number = 1) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const params: BlogSearchParams = {
+        page,
+        limit: pagination.limit,
+      };
+      
+      if (searchTerm) params.search = searchTerm;
+      if (activeCategory && activeCategory !== 'All') params.category = activeCategory;
+      
+      console.log('🚀 Fetching blogs with params:', params);
+      
+      const response = await blogService.getPublicBlogs(params);
+      
+      if (response.success && response.data) {
+        console.log('✅ Blogs fetched successfully:', response.data);
+        setBackendBlogs(response.data.blogs || []);
+        setPagination({
+          page: response.data.page || 1,
+          pages: response.data.total_pages || 1,
+          total: response.data.total || 0,
+          limit: response.data.limit || 12
+        });
+      } else {
+        throw new Error('Failed to fetch blogs');
+      }
+      
+    } catch (err) {
+      console.error('❌ Error fetching blogs:', err);
+      
+      let errorMessage = 'Failed to fetch blogs';
+      if (err && typeof err === 'object' && 'message' in err) {
+        const apiError = err as ApiError;
+        if (apiError.message.includes('Failed to fetch') || apiError.message.includes('Network connection error')) {
+          errorMessage = 'Cannot connect to server. Please check if the backend is running.';
+        } else {
+          errorMessage = apiError.message;
+        }
+      }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
+      setBackendBlogs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter blogs locally for tags (since backend doesn't support tag filtering yet)
+  const filteredBackendBlogs = React.useMemo(() => {
+    if (activeTags.length === 0) return backendBlogs;
+    
+    return backendBlogs.filter(blog => 
+      blog.tags && blog.tags.some((tag: string) => activeTags.includes(tag))
+    );
+  }, [backendBlogs, activeTags]);
+
+  // Convert filtered backend blogs to BlogCard format
+  const filteredBlogs: Blog[] = filteredBackendBlogs.map(blogService.convertBlogFormat);
+
+  // Handle search input change with debouncing
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
@@ -24,6 +112,7 @@ function BlogsPage() {
   // Handle category selection
   const handleCategoryClick = (category: string) => {
     setActiveCategory(category);
+    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
   };
   
   // Handle tag toggle
@@ -40,29 +129,30 @@ function BlogsPage() {
     setSearchTerm("");
     setActiveCategory("All");
     setActiveTags([]);
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
-  // Filter blogs based on search, category and tags
+  // Debounced search effect
   useEffect(() => {
-    const filtered = mockBlogs.filter(blog => {
-      // Search term filter
-      const searchMatch = searchTerm === "" || 
-        blog.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        blog.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      // Category filter
-      const categoryMatch = activeCategory === "All" || 
-        (blog.category?.toLowerCase() === activeCategory.toLowerCase());
-      
-      // Tags filter
-      const tagsMatch = activeTags.length === 0 || 
-        (blog.tags && blog.tags.some(tag => activeTags.includes(tag)));
-      
-      return searchMatch && categoryMatch && tagsMatch;
-    });
-    
-    setFilteredBlogs(filtered);
-  }, [searchTerm, activeCategory, activeTags]);
+    const timeoutId = setTimeout(() => {
+      fetchBlogs(1); // Reset to first page when search/category changes
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, activeCategory]); // Fixed: removed pagination.limit dependency
+
+  // Initial load
+  useEffect(() => {
+    fetchBlogs(1);
+  }, []); // Fixed: empty dependency array for initial load only
+
+  // Handle pagination
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= pagination.pages) {
+      fetchBlogs(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   return (
     <div className="bg-white min-h-screen">
@@ -110,7 +200,7 @@ function BlogsPage() {
                 <div className="mt-3 pt-3 border-t border-gray-200">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">
-                      {filteredBlogs.length} results
+                      {loading ? 'Searching...' : `${filteredBlogs.length} results`}
                     </span>
                     <button 
                       onClick={clearFilters}
@@ -136,7 +226,8 @@ function BlogsPage() {
                   <li key={category} className="mb-1">
                     <button
                       onClick={() => handleCategoryClick(category)}
-                      className={`w-full text-left py-1.5 px-2 rounded-md transition-colors flex items-center ${
+                      disabled={loading}
+                      className={`w-full text-left py-1.5 px-2 rounded-md transition-colors flex items-center disabled:opacity-50 ${
                         activeCategory === category
                           ? "bg-blue-100 text-blue-700 font-medium"
                           : "text-muted-foreground hover:bg-blue-50"
@@ -177,12 +268,85 @@ function BlogsPage() {
 
         {/* Main Blog Content */}
         <div className="lg:col-span-3">
-          {filteredBlogs.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredBlogs.map((blog) => (
-                <BlogCard key={blog.id} blog={blog} />
-              ))}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600">{error}</p>
+              <button 
+                onClick={() => fetchBlogs(pagination.page)}
+                className="mt-2 text-sm text-red-700 hover:text-red-800 underline"
+              >
+                Try again
+              </button>
             </div>
+          )}
+
+          {loading && backendBlogs.length === 0 ? (
+            <div className="flex justify-center items-center py-16">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+                <p className="text-muted-foreground">Loading blogs...</p>
+              </div>
+            </div>
+          ) : filteredBlogs.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredBlogs.map((blog) => (
+                  <BlogCard key={blog.slug} blog={blog} />
+                ))}
+              </div>
+              
+              {/* Pagination */}
+              {pagination.pages > 1 && activeTags.length === 0 && (
+                <div className="mt-12 flex justify-center">
+                  <nav className="inline-flex rounded-md shadow-sm" aria-label="Pagination">
+                    <button
+                      onClick={() => handlePageChange(pagination.page - 1)}
+                      disabled={pagination.page === 1 || loading}
+                      className="py-2 px-4 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    
+                    {/* Fixed pagination numbers calculation */}
+                    {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                      let startPage = Math.max(1, pagination.page - 2);
+                      const endPage = Math.min(pagination.pages, startPage + 4);
+                      
+                      if (endPage - startPage < 4) {
+                        startPage = Math.max(1, endPage - 4);
+                      }
+                      
+                      const page = startPage + i;
+                      
+                      if (page > pagination.pages) return null;
+                      
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          disabled={loading}
+                          className={`py-2 px-4 border border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed ${
+                            pagination.page === page
+                              ? "bg-blue-600 text-white border-blue-600"
+                              : "bg-white"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    }).filter(Boolean)}
+                    
+                    <button
+                      onClick={() => handlePageChange(pagination.page + 1)}
+                      disabled={pagination.page === pagination.pages || loading}
+                      className="py-2 px-4 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </nav>
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-16 bg-blue-50/50 rounded-lg">
               <div className="max-w-md mx-auto">
@@ -198,29 +362,6 @@ function BlogsPage() {
                   Clear All Filters
                 </button>
               </div>
-            </div>
-          )}
-          
-          {/* Pagination for larger blog collections */}
-          {filteredBlogs.length > 9 && (
-            <div className="mt-12 flex justify-center">
-              <nav className="inline-flex rounded-md shadow-sm" aria-label="Pagination">
-                <a href="#" className="py-2 px-4 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50">
-                  Previous
-                </a>
-                <a href="#" className="py-2 px-4 bg-blue-600 text-white border border-blue-600">
-                  1
-                </a>
-                <a href="#" className="py-2 px-4 bg-white border border-gray-300 hover:bg-gray-50">
-                  2
-                </a>
-                <a href="#" className="py-2 px-4 bg-white border border-gray-300 hover:bg-gray-50">
-                  3
-                </a>
-                <a href="#" className="py-2 px-4 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50">
-                  Next
-                </a>
-              </nav>
             </div>
           )}
         </div>

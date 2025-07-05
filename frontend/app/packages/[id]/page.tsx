@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TabsContent, TabsList, TabsTrigger, Tabs } from '@/components/ui/tabs';
 import { CalendarDays, CheckCircle, Heart, MapPin, Share2, Star, Tag, Users, Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import React, { useCallback, useEffect, useState } from 'react';
 import { BsArrowRight } from 'react-icons/bs';
 import { packageService, PublicPackage } from '@/lib/api/services/packages';
@@ -15,6 +16,7 @@ import { tripTypeService, TripType } from '@/lib/api/services/tripTypes';
 // If the file does not exist, create 'destination.ts' or 'destinations.ts' in '@/lib/api/services/' with the appropriate exports.
 import { destinationService, Destination } from '@/lib/api/services/destinations';
 import { toast } from 'sonner';
+import { BookingDialog } from '@/components/booking/BookingDialog';
 
 export default function PackageDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const [packageDetails, setPackageDetails] = useState<PublicPackage | null>(null);
@@ -27,6 +29,7 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
   const [offerLoading, setOfferLoading] = useState(false);
   const [tripType, setTripType] = useState<TripType | null>(null);
   const [tripTypeLoading, setTripTypeLoading] = useState(false);
+  const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
   const resolvedParams = React.use(params);
 
   useEffect(() => {
@@ -443,7 +446,10 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
                   </div>
 
                   <div className="space-y-3">
-                    <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
+                    <button 
+                      onClick={() => setIsBookingDialogOpen(true)}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                    >
                       Book Now
                       <BsArrowRight className="h-4 w-4" />
                     </button>
@@ -472,12 +478,21 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
                     {destinationLoading ? 'Loading destination...' : (destination ? `${destination.city}, ${destination.country}` : "Unknown")}
                   </p>
                   {destination && (
-                    <button
-                      className="mt-2 text-blue-600 hover:underline text-sm"
-                      onClick={() => setShowDestinationDetails((prev) => !prev)}
-                    >
-                      {showDestinationDetails ? 'Hide Details' : 'Show Details'}
-                    </button>
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        className="text-blue-600 hover:underline text-sm"
+                        onClick={() => setShowDestinationDetails((prev) => !prev)}
+                      >
+                        {showDestinationDetails ? 'Hide Details' : 'Show Details'}
+                      </button>
+                      <span className="text-gray-400">|</span>
+                      <Link 
+                        href={`/destinations/${destination.id}`}
+                        className="text-blue-600 hover:underline text-sm font-medium"
+                      >
+                        View Full Destination →
+                      </Link>
+                    </div>
                   )}
                   {destination && showDestinationDetails && (
                     <div className="mt-2 p-4 bg-blue-50 rounded-lg border border-blue-100 text-sm text-gray-700">
@@ -492,6 +507,14 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
                           <Image src={destination.image} alt={destination.name} width={320} height={180} className="rounded-md object-cover" />
                         </div>
                       )}
+                      <div className="mt-3 pt-2 border-t border-blue-200">
+                        <Link 
+                          href={`/destinations/${destination.id}`}
+                          className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm"
+                        >
+                          View Complete Destination Details →
+                        </Link>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -519,6 +542,21 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
           </div>
         </div>
       </div>
+
+      {/* Booking Dialog */}
+      <BookingDialog
+        isOpen={isBookingDialogOpen}
+        onClose={() => setIsBookingDialogOpen(false)}
+        packageId={resolvedParams.id}
+        packageTitle={packageDetails.title}
+        packagePrice={effectivePrice}
+        onBookingSuccess={(bookingId) => {
+          toast.success('Booking created successfully!');
+          setIsBookingDialogOpen(false);
+          // Optionally redirect to booking confirmation page
+          // window.location.href = `/bookings/${bookingId}`;
+        }}
+      />
     </div>
   );
 }

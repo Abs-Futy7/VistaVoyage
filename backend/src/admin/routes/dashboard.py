@@ -62,7 +62,8 @@ async def get_dashboard_stats(session: AsyncSession = Depends(get_session)):
         total_revenue_result = await session.exec(
             select(func.sum(Booking.total_amount))
         )
-        total_revenue = total_revenue_result.first() or 0.0
+        total_revenue_decimal = total_revenue_result.first() or 0.0
+        total_revenue = float(total_revenue_decimal) if total_revenue_decimal else 0.0
         
         # Get recent bookings (limit 5)
         recent_bookings_result = await session.exec(
@@ -71,12 +72,12 @@ async def get_dashboard_stats(session: AsyncSession = Depends(get_session)):
         recent_bookings = [
             {
                 "id": str(booking.id),
-                "customerName": booking.customer_name,
+                "customerName": str(booking.user_id),  # Using user_id instead of customer_name
                 "packageId": str(booking.package_id),
                 "status": booking.status,
-                "totalAmount": booking.total_amount,
-                "guests": booking.guests,
-                "travelDate": booking.travel_date.isoformat() + "Z",
+                "totalAmount": float(booking.total_amount),
+                "guests": 1,  # Default value since guests field doesn't exist
+                "travelDate": booking.created_at.isoformat() + "Z",  # Using created_at as fallback
                 "bookingDate": booking.booking_date.isoformat() + "Z"
             }
             for booking in recent_bookings_result.all()
@@ -125,8 +126,8 @@ async def get_dashboard_stats(session: AsyncSession = Depends(get_session)):
             "publishedBlogs": published_blogs,
             "revenue": {
                 "total": total_revenue,
-                "thisMonth": total_revenue * 0.2,  # Mock calculation - you can implement proper monthly calculation
-                "lastMonth": total_revenue * 0.16,  # Mock calculation
+                "thisMonth": round(total_revenue * 0.2, 2),  # Mock calculation - you can implement proper monthly calculation
+                "lastMonth": round(total_revenue * 0.16, 2),  # Mock calculation
                 "growth": 25  # Mock calculation
             },
             "bookingsByStatus": booking_stats,

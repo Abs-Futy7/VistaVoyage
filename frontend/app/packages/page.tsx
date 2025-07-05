@@ -15,6 +15,7 @@ import { offerService, Offer } from '@/lib/api/services/offers';
 import { tripTypeService, TripType } from '@/lib/api/services/tripTypes';
 import { destinationService, Destination } from '@/lib/api/services/destinations';
 import { toast } from "sonner";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 function PackageListingPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -312,4 +313,10 @@ function PackageListingPage() {
   );
 }
 
-export default PackageListingPage;
+export default function PackagesPage() {
+  return (
+    <ProtectedRoute message="You need to login to view travel packages">
+      <PackageListingPage />
+    </ProtectedRoute>
+  );
+}

@@ -156,7 +156,7 @@ class Booking(SQLModel, table=True):
     promo_code: Optional["PromoCode"] = Relationship(back_populates="bookings")
 
     def __repr__(self):
-        return f"<Booking {self.booking_reference} - {self.customer_name}>"
+        return f"<Booking {self.id} - User: {self.user_id}>"
 
     @property
     def outstanding_amount(self) -> float:

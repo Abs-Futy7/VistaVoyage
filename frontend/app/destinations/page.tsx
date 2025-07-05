@@ -12,6 +12,7 @@ import React, { useEffect, useState } from "react";
 import DestinationCard from "@/components/ui/DestinationCard";
 import { destinationService, Destination, DestinationSearchFilters } from "@/lib/api/services/destinations";
 import { toast } from "sonner";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 // Define a type for destinations that have guaranteed imageUrl
 type DestinationWithImageUrl = Omit<Destination, 'imageUrl'> & { imageUrl: string };
@@ -176,4 +177,10 @@ function DestinationsPage() {
   );
 }
 
-export default DestinationsPage;
+export default function DestinationsPageWithAuth() {
+  return (
+    <ProtectedRoute message="You need to login to view destinations">
+      <DestinationsPage />
+    </ProtectedRoute>
+  );
+}

@@ -6,9 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
-  Edit, 
   Eye, 
-  PlusCircle, 
   Search, 
   Trash2, 
   FileText,
@@ -20,8 +18,6 @@ import {
   Calendar
 } from 'lucide-react';
 import { useAdminBlogs } from '@/hooks/useAdmin';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import AdminForm, { FormField } from '@/components/ui/admin-form';
 import { AdminBlog } from '@/lib/api/services/admin';
 import { toast } from 'sonner';
 
@@ -34,153 +30,16 @@ export default function AdminBlogManagePage() {
     fetchBlogs,
     toggleBlogStatus,
     deleteBlog,
-    createBlog,
-    updateBlog,
     search,
     searchTerm,
   } = useAdminBlogs();
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingBlog, setEditingBlog] = useState<AdminBlog | null>(null);
   const [copiedBlogId, setCopiedBlogId] = useState<string | null>(null);
-
-  // Form data state
-  const [createFormData, setCreateFormData] = useState<Record<string, any>>({
-    title: '',
-    author_id: '',
-    excerpt: '',
-    content: '',
-    category: '',
-    tags: '',
-    status: 'draft',
-    is_featured: false
-  });
-
-  const [editFormData, setEditFormData] = useState<Record<string, any>>({});
-
-  // Form fields configuration
-  const formFields: FormField[] = [
-    {
-      name: 'title',
-      label: 'Blog Title',
-      type: 'text',
-      required: true,
-      placeholder: 'Enter blog title'
-    },
-    {
-      name: 'author_id',
-      label: 'Author ID',
-      type: 'text',
-      required: true,
-      placeholder: 'Enter author ID'
-    },
-    {
-      name: 'category',
-      label: 'Category',
-      type: 'text',
-      required: true,
-      placeholder: 'e.g., Travel Guide, Budget Travel'
-    },
-    {
-      name: 'excerpt',
-      label: 'Excerpt',
-      type: 'textarea',
-      placeholder: 'Brief description of the blog post',
-      rows: 3
-    },
-    {
-      name: 'content',
-      label: 'Content',
-      type: 'textarea',
-      required: true,
-      placeholder: 'Write your blog content here...',
-      rows: 10
-    },
-    {
-      name: 'tags',
-      label: 'Tags (comma-separated)',
-      type: 'text',
-      placeholder: 'travel, adventure, tips'
-    },
-    {
-      name: 'cover_image',
-      label: 'Cover Image',
-      type: 'file',
-      accept: 'image/*',
-      maxSize: 5
-    },
-    {
-      name: 'status',
-      label: 'Status',
-      type: 'select',
-      required: true,
-      options: [
-        { value: 'draft', label: 'Draft' },
-        { value: 'published', label: 'Published' },
-        { value: 'archived', label: 'Archived' }
-      ]
-    },
-    {
-      name: 'is_featured',
-      label: 'Featured',
-      type: 'checkbox'
-    }
-  ];
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     search(searchTerm);
-  };
-
-  const handleCreateFormChange = (field: string, value: any) => {
-    setCreateFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleEditFormChange = (field: string, value: any) => {
-    setEditFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleCreateBlog = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const blogData = {
-      ...createFormData,
-      tags: createFormData.tags ? createFormData.tags.split(',').map((tag: string) => tag.trim()) : [],
-    };
-
-    const result = await createBlog(blogData);
-    if (result) {
-      setIsCreateDialogOpen(false);
-      setCreateFormData({
-        title: '',
-        author_id: '',
-        excerpt: '',
-        content: '',
-        category: '',
-        tags: '',
-        status: 'draft',
-        is_featured: false
-      });
-    }
-  };
-
-  const handleUpdateBlog = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingBlog) return;
-    
-    const blogData = {
-      ...editFormData,
-      tags: editFormData.tags ? editFormData.tags.split(',').map((tag: string) => tag.trim()) : [],
-    };
-
-    const result = await updateBlog(editingBlog.id, blogData);
-    if (result) {
-      setIsEditDialogOpen(false);
-      setEditingBlog(null);
-      setEditFormData({});
-    }
   };
 
   const handleToggleBlogStatus = async (blogId: string) => {
@@ -197,21 +56,6 @@ export default function AdminBlogManagePage() {
     setActionLoading(blogId);
     await deleteBlog(blogId);
     setActionLoading(null);
-  };
-
-  const handleEditBlog = (blog: AdminBlog) => {
-    setEditingBlog(blog);
-    setEditFormData({
-      title: blog.title,
-      author_id: blog.author_id,
-      excerpt: blog.excerpt || '',
-      content: blog.content,
-      category: blog.category,
-      tags: blog.tags ? blog.tags.join(', ') : '',
-      status: blog.status,
-      is_featured: blog.is_featured
-    });
-    setIsEditDialogOpen(true);
   };
 
   const copyBlogId = async (blogId: string) => {
@@ -288,29 +132,6 @@ export default function AdminBlogManagePage() {
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Search'}
               </Button>
             </form>
-            
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="flex items-center">
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Create Blog
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Create New Blog Post</DialogTitle>
-                </DialogHeader>
-                <AdminForm
-                  title=""
-                  fields={formFields}
-                  data={createFormData}
-                  onChange={handleCreateFormChange}
-                  onSubmit={handleCreateBlog}
-                  submitText="Create Blog"
-                  loading={loading}
-                />
-              </DialogContent>
-            </Dialog>
           </div>
         </CardContent>
       </Card>
@@ -440,19 +261,9 @@ export default function AdminBlogManagePage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleEditBlog(blog)}
-                    disabled={actionLoading === blog.id}
-                    className="flex-1"
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
                     onClick={() => handleToggleBlogStatus(blog.id)}
                     disabled={actionLoading === blog.id}
+                    className="flex-1"
                   >
                     {actionLoading === blog.id ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -511,26 +322,6 @@ export default function AdminBlogManagePage() {
           </CardContent>
         </Card>
       )}
-
-      {/* Edit Blog Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Blog Post</DialogTitle>
-          </DialogHeader>
-          {editingBlog && (
-            <AdminForm
-              title=""
-              fields={formFields}
-              data={editFormData}
-              onChange={handleEditFormChange}
-              onSubmit={handleUpdateBlog}
-              submitText="Update Blog"
-              loading={loading}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

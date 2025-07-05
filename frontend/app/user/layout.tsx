@@ -1,5 +1,5 @@
 
-import { Heart, ListOrdered, UserCircle } from 'lucide-react'
+import { Heart, ListOrdered, UserCircle, FileText } from 'lucide-react'
 import Link from 'next/link'
 import React from 'react'
 
@@ -9,6 +9,7 @@ function layout({ children }: { children: React.ReactNode }) {
  const userSideNavbar=[
   { title: 'My Profile', link: '/user/profile', icons: <UserCircle className="h-4 w-4 mr-2" /> },
   { title: 'My Bookings', link: '/user/bookings', icons: <ListOrdered className="h-4 w-4 mr-2" /> },
+  { title: 'My Blogs', link: '/user/blogs', icons: <FileText className="h-4 w-4 mr-2" /> },
   { title: 'My Wishlist', link: '/user/wishlist', icons: <Heart className="h-4 w-4 mr-2" /> },
 ]
 

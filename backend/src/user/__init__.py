@@ -7,6 +7,7 @@ from .routes.bookings import booking_router
 from .routes.packages import packages_router
 from .routes.destinations import destinations_router
 from .routes.trip_type import trip_type_router
+from .routes.blogs import blogs_router
 
 user_router = APIRouter()
 
@@ -18,4 +19,5 @@ user_router.include_router(booking_router, tags=["Bookings"])
 user_router.include_router(packages_router, tags=["Packages"])
 user_router.include_router(destinations_router, tags=["Destinations"])
 user_router.include_router(trip_type_router, tags=["Trip Types"])
+user_router.include_router(blogs_router, tags=["Blogs"])
 

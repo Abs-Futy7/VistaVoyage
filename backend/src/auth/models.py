@@ -7,6 +7,7 @@ from typing import Optional, List, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..models.booking import Booking
+    from ..models.blog import Blog
 
 
 class User(SQLModel, table=True):
@@ -109,6 +110,7 @@ class User(SQLModel, table=True):
     
     # Relationships
     bookings: List["Booking"] = Relationship(back_populates="user")
+    blogs: List["Blog"] = Relationship(back_populates="author")
 
     def __repr__(self):
         return f"<User {self.email}>"
