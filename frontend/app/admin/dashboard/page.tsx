@@ -18,7 +18,29 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       const data = await adminService.getDashboardStats();
-      setStats(data);
+      
+      // Ensure all data properties are properly initialized to prevent React rendering errors
+      const safeData: DashboardStats = {
+        totalUsers: data.totalUsers || 0,
+        activeUsers: data.activeUsers || 0,
+        totalPackages: data.totalPackages || 0,
+        activePackages: data.activePackages || 0,
+        totalBookings: data.totalBookings || 0,
+        totalBlogs: data.totalBlogs || 0,
+        publishedBlogs: data.publishedBlogs || 0,
+        revenue: {
+          total: data.revenue?.total || 0,
+          thisMonth: data.revenue?.thisMonth || 0,
+          lastMonth: data.revenue?.lastMonth || 0,
+          growth: data.revenue?.growth || 0
+        },
+        bookingsByStatus: data.bookingsByStatus || {},
+        recentBookings: data.recentBookings || [],
+        recentUsers: data.recentUsers || [],
+        recentBlogs: data.recentBlogs || []
+      };
+      
+      setStats(safeData);
     } catch (error: any) {
       console.error('Failed to fetch dashboard stats:', error);
       toast.error('Failed to load dashboard data', {
@@ -133,21 +155,21 @@ export default function AdminDashboard() {
           <CardContent className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Total Revenue</span>
-              <span className="text-2xl font-bold">${stats.revenue.total.toLocaleString()}</span>
+              <span className="text-2xl font-bold">${stats.revenue?.total?.toLocaleString() || "0.00"}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">This Month</span>
-              <span className="text-lg font-semibold">${stats.revenue.thisMonth.toLocaleString()}</span>
+              <span className="text-lg font-semibold">${stats.revenue?.thisMonth?.toLocaleString() || "0.00"}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Last Month</span>
-              <span className="text-lg">${stats.revenue.lastMonth.toLocaleString()}</span>
+              <span className="text-lg">${stats.revenue?.lastMonth?.toLocaleString() || "0.00"}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Growth</span>
               <div className="flex items-center gap-1">
                 <TrendingUp className="h-4 w-4 text-green-600" />
-                <span className="text-green-600 font-semibold">{stats.revenue.growth}%</span>
+                <span className="text-green-600 font-semibold">{stats.revenue?.growth || 0}%</span>
               </div>
             </div>
           </CardContent>
@@ -158,22 +180,28 @@ export default function AdminDashboard() {
             <CardTitle>Bookings by Status</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {Object.entries(stats.bookingsByStatus).map(([status, count]) => (
-              <div key={status} className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <Badge 
-                    variant={
-                      status === 'confirmed' ? 'default' :
-                      status === 'pending' ? 'secondary' :
-                      status === 'cancelled' ? 'destructive' : 'outline'
-                    }
-                  >
-                    {status.charAt(0).toUpperCase() + status.slice(1)}
-                  </Badge>
+            {stats.bookingsByStatus && Object.keys(stats.bookingsByStatus).length > 0 ? (
+              Object.entries(stats.bookingsByStatus).map(([status, count]) => (
+                <div key={status} className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Badge 
+                      variant={
+                        status === 'confirmed' ? 'default' :
+                        status === 'pending' ? 'secondary' :
+                        status === 'cancelled' ? 'destructive' : 'outline'
+                      }
+                    >
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </Badge>
+                  </div>
+                  <span className="font-semibold">{count}</span>
                 </div>
-                <span className="font-semibold">{count}</span>
+              ))
+            ) : (
+              <div className="text-center py-4 text-gray-500">
+                No booking data available
               </div>
-            ))}
+            )}
           </CardContent>
         </Card>
       </div>
@@ -187,20 +215,26 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {stats.recentBookings.map((booking: any, index: number) => (
-                <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                  <div>
-                    <p className="font-medium">{booking.customerName}</p>
-                    <p className="text-sm text-gray-600">{booking.packageTitle}</p>
+              {stats.recentBookings && stats.recentBookings.length > 0 ? (
+                stats.recentBookings.map((booking: any, index: number) => (
+                  <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                    <div>
+                      <p className="font-medium">{booking.customerName || 'Unknown'}</p>
+                      <p className="text-sm text-gray-600">{booking.packageTitle || booking.packageId}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">${booking.totalAmount}</p>
+                      <Badge variant={booking.status === 'confirmed' ? 'default' : 'secondary'}>
+                        {booking.status}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold">${booking.totalAmount}</p>
-                    <Badge variant={booking.status === 'confirmed' ? 'default' : 'secondary'}>
-                      {booking.status}
-                    </Badge>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  No recent bookings available
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
@@ -212,19 +246,25 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {stats.recentUsers.map((user: any, index: number) => (
-                <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                  <div>
-                    <p className="font-medium">{user.fullName}</p>
-                    <p className="text-sm text-gray-600">{user.email}</p>
+              {stats.recentUsers && stats.recentUsers.length > 0 ? (
+                stats.recentUsers.map((user: any, index: number) => (
+                  <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                    <div>
+                      <p className="font-medium">{user.fullName}</p>
+                      <p className="text-sm text-gray-600">{user.email}</p>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                        {user.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <Badge variant={user.isActive ? 'default' : 'secondary'}>
-                      {user.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  No recent users available
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>

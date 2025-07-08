@@ -108,8 +108,6 @@ async def create_package(
     exclusions: Optional[str] = Form(None),
     terms_conditions: Optional[str] = Form(None),
     max_group_size: Optional[int] = Form(None),
-    min_age: Optional[int] = Form(None),
-    difficulty_level: Optional[str] = Form(None),
     available_from: Optional[str] = Form(None),
     available_until: Optional[str] = Form(None),
     
@@ -167,14 +165,34 @@ async def create_package(
         if available_from:
             try:
                 from datetime import datetime
-                available_from_dt = datetime.fromisoformat(available_from.replace('Z', '+00:00'))
+                # First try to parse as ISO format
+                try:
+                    # Remove timezone info to make it naive
+                    date_str = available_from.split('T')[0] if 'T' in available_from else available_from
+                    available_from_dt = datetime.strptime(date_str, '%Y-%m-%d')
+                except ValueError:
+                    # Fallback to full ISO parsing but remove timezone
+                    available_from_dt = datetime.fromisoformat(available_from.replace('Z', ''))
+                    if available_from_dt.tzinfo is not None:
+                        # Convert to naive datetime by removing timezone
+                        available_from_dt = available_from_dt.replace(tzinfo=None)
             except ValueError:
                 pass
         
         if available_until:
             try:
                 from datetime import datetime
-                available_until_dt = datetime.fromisoformat(available_until.replace('Z', '+00:00'))
+                # First try to parse as ISO format
+                try:
+                    # Remove timezone info to make it naive
+                    date_str = available_until.split('T')[0] if 'T' in available_until else available_until
+                    available_until_dt = datetime.strptime(date_str, '%Y-%m-%d')
+                except ValueError:
+                    # Fallback to full ISO parsing but remove timezone
+                    available_until_dt = datetime.fromisoformat(available_until.replace('Z', ''))
+                    if available_until_dt.tzinfo is not None:
+                        # Convert to naive datetime by removing timezone
+                        available_until_dt = available_until_dt.replace(tzinfo=None)
             except ValueError:
                 pass
         
@@ -200,8 +218,6 @@ async def create_package(
             terms_conditions=terms_conditions,
             image_gallery=gallery_image_urls if gallery_image_urls else None,
             max_group_size=max_group_size,
-            min_age=min_age,
-            difficulty_level=difficulty_level,
             available_from=available_from_dt,
             available_until=available_until_dt
         )
@@ -238,8 +254,6 @@ async def update_package(
     exclusions: Optional[str] = Form(None),
     terms_conditions: Optional[str] = Form(None),
     max_group_size: Optional[int] = Form(None),
-    min_age: Optional[int] = Form(None),
-    difficulty_level: Optional[str] = Form(None),
     available_from: Optional[str] = Form(None),
     available_until: Optional[str] = Form(None),
     
@@ -340,19 +354,35 @@ async def update_package(
             print(f"Setting image_gallery in update_data: {gallery_image_urls}")
         if max_group_size is not None:
             update_data.max_group_size = max_group_size
-        if min_age is not None:
-            update_data.min_age = min_age
-        if difficulty_level is not None:
-            update_data.difficulty_level = difficulty_level
         if available_from is not None:
             try:
-                update_data.available_from = datetime.fromisoformat(available_from.replace('Z', '+00:00'))
+                # First try to parse as ISO format
+                try:
+                    # Remove timezone info to make it naive
+                    date_str = available_from.split('T')[0] if 'T' in available_from else available_from
+                    update_data.available_from = datetime.strptime(date_str, '%Y-%m-%d')
+                except ValueError:
+                    # Fallback to full ISO parsing but remove timezone
+                    update_data.available_from = datetime.fromisoformat(available_from.replace('Z', ''))
+                    if update_data.available_from.tzinfo is not None:
+                        # Convert to naive datetime by removing timezone
+                        update_data.available_from = update_data.available_from.replace(tzinfo=None)
             except ValueError:
                 # Try parsing as date only
                 update_data.available_from = datetime.strptime(available_from, '%Y-%m-%d')
         if available_until is not None:
             try:
-                update_data.available_until = datetime.fromisoformat(available_until.replace('Z', '+00:00'))
+                # First try to parse as ISO format
+                try:
+                    # Remove timezone info to make it naive
+                    date_str = available_until.split('T')[0] if 'T' in available_until else available_until
+                    update_data.available_until = datetime.strptime(date_str, '%Y-%m-%d')
+                except ValueError:
+                    # Fallback to full ISO parsing but remove timezone
+                    update_data.available_until = datetime.fromisoformat(available_until.replace('Z', ''))
+                    if update_data.available_until.tzinfo is not None:
+                        # Convert to naive datetime by removing timezone
+                        update_data.available_until = update_data.available_until.replace(tzinfo=None)
             except ValueError:
                 # Try parsing as date only
                 update_data.available_until = datetime.strptime(available_until, '%Y-%m-%d')
@@ -431,12 +461,13 @@ async def get_package(
     session: AsyncSession = Depends(get_session),
     token_data: dict = Depends(admin_access_bearer)
 ):
-    """Get a single package by ID"""
+    """Get a single package by ID with all related data"""
     try:
-        package = await package_service.get_package_by_id(session, package_id)
-        if not package:
+        # Use the detail method to get complete package information
+        package_detail = await package_service.get_package_detail(session, package_id)
+        if not package_detail:
             raise HTTPException(status_code=404, detail="Package not found")
-        return package
+        return package_detail
     except Exception as e:
         if isinstance(e, HTTPException):
             raise e
@@ -490,45 +521,12 @@ async def get_package_details(
 ):
     """Get detailed package information with relationships"""
     try:
-        from sqlmodel import select
-        from ...models.destination import Destination
-        from ...models.trip_type import TripType
-        from ...models.offer import Offer
-        from ...schemas.package_schemas import PackageDetailResponseModel
-        
-        # Get package with relationships
-        statement = select(Package).where(Package.id == package_id)
-        result = await session.exec(statement)
-        package = result.first()
-        
-        if not package:
+        # Use the detail method to get complete package information
+        package_detail = await package_service.get_package_detail(session, package_id)
+        if not package_detail:
             raise HTTPException(status_code=404, detail="Package not found")
         
-        # Get related data
-        dest_statement = select(Destination).where(Destination.id == package.destination_id)
-        dest_result = await session.exec(dest_statement)
-        destination = dest_result.first()
-        
-        trip_statement = select(TripType).where(TripType.id == package.trip_type_id)
-        trip_result = await session.exec(trip_statement)
-        trip_type = trip_result.first()
-        
-        offer = None
-        if package.offer_id:
-            offer_statement = select(Offer).where(Offer.id == package.offer_id)
-            offer_result = await session.exec(offer_statement)
-            offer = offer_result.first()
-        
-        # Build detailed response
-        package_dict = {
-            **package.model_dump(),
-            "destination_name": destination.name if destination else None,
-            "trip_type_name": trip_type.name if trip_type else None,
-            "offer_title": offer.title if offer else None
-        }
-        
-        return PackageDetailResponseModel(**package_dict)
-        
+        return package_detail
     except Exception as e:
         if isinstance(e, HTTPException):
             raise e

@@ -42,7 +42,14 @@ function Navbar() {
   return (
     <div className='flex justify-between items-center px-4 bg-white text-gray-800 gap-3 sticky top-0 z-50 shadow-md backdrop-blur-md py-2'>
       <Link className='text-lg font-bold flex items-center' href='/'>
-        <Image src='/icons/logo.png' alt='VoyageVista Logo' width={100} height={100} className='inline-block text-xl' />
+        <Image 
+          src='/icons/logo.png' 
+          alt='VoyageVista Logo' 
+          width={100} 
+          height={100} 
+          style={{ width: 'auto', height: '100px' }}  
+          className='inline-block text-xl' 
+        />
         VoyageVista
       </Link>
       

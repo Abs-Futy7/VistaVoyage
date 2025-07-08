@@ -65,7 +65,7 @@ export class PackageService {
       });
 
       const response = await apiClient.get<PackagesResponse>(
-        `/api/v1/user/packages?${params}`,
+        `${API_CONFIG.ENDPOINTS.PACKAGES.BASE}?${params}`,
         token ? { Authorization: `Bearer ${token}` } : undefined
       );
 
@@ -83,7 +83,7 @@ export class PackageService {
   async getPackageById(id: string, token?: string): Promise<PublicPackage> {
     try {
       const response = await apiClient.get<PublicPackage>(
-        `/api/v1/user/packages/${id}`,
+        API_CONFIG.ENDPOINTS.PACKAGES.BY_ID(id),
         token ? { Authorization: `Bearer ${token}` } : undefined
       );
       
@@ -101,7 +101,7 @@ export class PackageService {
   async getPopularPackages(limit: number = 6, token?: string): Promise<PublicPackage[]> {
     try {
       const response = await apiClient.get<{ packages: PublicPackage[] }>(
-        `/api/v1/user/packages/featured?limit=${limit}`,
+        `${API_CONFIG.ENDPOINTS.PACKAGES.FEATURED}?limit=${limit}`,
         token ? { Authorization: `Bearer ${token}` } : undefined
       );
       
@@ -119,7 +119,7 @@ export class PackageService {
   async getFeaturedPackages(limit: number = 6, token?: string): Promise<PublicPackage[]> {
     try {
       const response = await apiClient.get<{ packages: PublicPackage[] }>(
-        `/api/v1/user/packages/featured?limit=${limit}`,
+        `${API_CONFIG.ENDPOINTS.PACKAGES.FEATURED}?limit=${limit}`,
         token ? { Authorization: `Bearer ${token}` } : undefined
       );
 
@@ -148,7 +148,7 @@ export class PackageService {
       });
 
       const response = await apiClient.get<{ packages: PublicPackage[] }>(
-        `/api/v1/user/packages/search?${params}`,
+        `${API_CONFIG.ENDPOINTS.PACKAGES.SEARCH}?${params}`,
         token ? { Authorization: `Bearer ${token}` } : undefined
       );
 

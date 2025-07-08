@@ -155,6 +155,39 @@ class AdminUserService:
         await session.refresh(user)
         
         return user
+    
+    async def get_user_stats(self, session: AsyncSession) -> Dict[str, Any]:
+        """Get user statistics for admin dashboard"""
+        
+        # Total users
+        total_query = select(func.count(User.uid))
+        total_result = await session.exec(total_query)
+        total_users = total_result.one()
+        
+        # Active users
+        active_query = select(func.count(User.uid)).where(User.is_active == True)
+        active_result = await session.exec(active_query)
+        active_users = active_result.one()
+        
+        # Users by country
+        country_query = select(User.country, func.count(User.uid)).group_by(User.country)
+        country_result = await session.exec(country_query)
+        users_by_country = {country: count for country, count in country_result.all() if country}
+        
+        # Recent registrations (last 30 days)
+        from datetime import datetime, timedelta
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        recent_query = select(func.count(User.uid)).where(User.created_at >= thirty_days_ago)
+        recent_result = await session.exec(recent_query)
+        recent_registrations = recent_result.one()
+        
+        return {
+            "total_users": total_users,
+            "active_users": active_users,
+            "inactive_users": total_users - active_users,
+            "users_by_country": users_by_country,
+            "recent_registrations": recent_registrations
+        }
 
 
 # Create singleton instance

@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Font optimization settings to fix turbopack font issues
+  optimizeFonts: false,
   images: {
     remotePatterns: [
       {

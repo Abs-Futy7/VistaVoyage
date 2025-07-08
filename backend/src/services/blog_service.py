@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, func
 from fastapi import HTTPException, UploadFile
@@ -170,7 +170,37 @@ class BlogService:
         await session.refresh(blog)
         
         return blog
-
+    
+    async def get_blog_stats(self, session: AsyncSession) -> Dict[str, Any]:
+        """Get blog statistics for admin dashboard"""
+        from ..models.blog import BlogStatus
+        
+        # Total blogs
+        total_query = select(func.count(Blog.id))
+        total_result = await session.exec(total_query)
+        total_blogs = total_result.one()
+        
+        # Published blogs
+        published_query = select(func.count(Blog.id)).where(Blog.status == BlogStatus.PUBLISHED)
+        published_result = await session.exec(published_query)
+        published_blogs = published_result.one()
+        
+        # Draft blogs
+        draft_query = select(func.count(Blog.id)).where(Blog.status == BlogStatus.DRAFT)
+        draft_result = await session.exec(draft_query)
+        draft_blogs = draft_result.one()
+        
+        # Blogs by category
+        category_query = select(Blog.category, func.count(Blog.id)).group_by(Blog.category)
+        category_result = await session.exec(category_query)
+        blogs_by_category = {category: count for category, count in category_result.all() if category}
+        
+        return {
+            "total_blogs": total_blogs,
+            "published_blogs": published_blogs,
+            "draft_blogs": draft_blogs,
+            "blogs_by_category": blogs_by_category
+        }
 
 # Create singleton instance
 blog_service = BlogService()

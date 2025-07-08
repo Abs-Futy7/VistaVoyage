@@ -135,6 +135,23 @@ export class AdminAuthService {
     }
   }
 
+  // Update profile
+  async updateProfile(data: { full_name: string; email: string }): Promise<AdminModel> {
+    try {
+      const response = await apiClient.put<AdminModel>(
+        API_CONFIG.ENDPOINTS.ADMIN_AUTH.UPDATE_PROFILE,
+        data
+      );
+      if (response.success && response.data) {
+        return response.data;
+      }
+      throw new Error(response.message || 'Failed to update profile');
+    } catch (error: any) {
+      console.error('Update profile error:', error);
+      throw error;
+    }
+  }
+
   // Token management
   private setTokens(accessToken: string, refreshToken: string): void {
     localStorage.setItem('admin_access_token', accessToken);

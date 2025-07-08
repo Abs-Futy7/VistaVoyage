@@ -1,26 +1,35 @@
-from .blog import Blog, BlogCategory, BlogStatus
-from .package import Package, PackageDifficulty
+from .activity import Activity
+from .blog import Blog, BlogStatus, BlogCategory
 from .booking import Booking, BookingStatus, PaymentStatus
+from .booking_payment import BookingPayment
 from .destination import Destination
 from .offer import Offer
-from .activity import Activity
-from .trip_type import TripType
-from .promo_code import PromoCode
+from .package import Package, PackageDifficulty
 from .package_activity_link import PackageActivityLink
+from .package_details import PackageDetails
+from .package_image import PackageImage
+from .package_schedule import PackageSchedule
+from .promo_code import PromoCode
+from .trip_type import TripType
 
 __all__ = [
+    # Core Models
+    "Activity",
     "Blog",
+    "BlogStatus", 
     "BlogCategory",
-    "BlogStatus",
-    "Package",
-    "PackageDifficulty",
     "Booking",
     "BookingStatus",
     "PaymentStatus",
+    "BookingPayment",
     "Destination",
     "Offer",
-    "Activity",
-    "TripType",
+    "Package",
+    "PackageDifficulty",
+    "PackageActivityLink",
+    "PackageDetails",
+    "PackageImage",
+    "PackageSchedule",
     "PromoCode",
-    "PackageActivityLink"
+    "TripType",
 ]

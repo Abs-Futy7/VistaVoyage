@@ -22,9 +22,28 @@ export default function CreatePackagePage() {
       // Add package data
       Object.keys(data).forEach(key => {
         if (data[key] !== undefined && data[key] !== null) {
-          if (key === 'available_from' || key === 'available_until') {
-            formData.append(key, data[key].toISOString());
-          } else {
+          // Handle UUID fields specifically
+          if (key === 'destination_id' || key === 'trip_type_id' || key === 'offer_id') {
+            // Only add if it's a valid UUID string, skip empty strings
+            if (data[key] && typeof data[key] === 'string' && data[key].trim() !== '') {
+              formData.append(key, data[key]);
+            }
+          } 
+          // Handle date fields
+          else if (key === 'available_from' || key === 'available_until') {
+            if (data[key]) {
+              // Format as YYYY-MM-DD to avoid timezone issues
+              const dateObj = new Date(data[key]);
+              const formattedDate = dateObj.toISOString().split('T')[0];
+              formData.append(key, formattedDate);
+            }
+          } 
+          // Handle boolean fields
+          else if (typeof data[key] === 'boolean') {
+            formData.append(key, data[key].toString());
+          }
+          // Handle all other fields
+          else {
             formData.append(key, data[key].toString());
           }
         }
@@ -37,9 +56,14 @@ export default function CreatePackagePage() {
 
       // Add gallery images
       if (galleryImages && galleryImages.length > 0) {
-        galleryImages.forEach((image, index) => {
-          formData.append(`gallery_image_${index}`, image);
+        galleryImages.forEach((image) => {
+          formData.append('gallery_images', image);
         });
+      }
+
+      console.log('Form data being sent:');
+      for (const [key, value] of formData.entries()) {
+        console.log(`${key}: ${value instanceof File ? value.name : value}`);
       }
 
       await adminService.createPackage(formData);
@@ -47,8 +71,13 @@ export default function CreatePackagePage() {
       router.push('/admin/packages');
     } catch (error: any) {
       console.error('Failed to create package:', error);
+      console.error('Error response:', error.response);
+      console.error('Error details:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      console.error('Full error object:', error);
+      
       toast.error('Failed to create package', {
-        description: error.message || 'Please try again'
+        description: error.message || error.response?.data?.message || 'Please try again'
       });
     }
   };

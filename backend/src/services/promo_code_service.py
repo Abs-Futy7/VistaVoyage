@@ -1,6 +1,6 @@
 from sqlmodel import Session, select
 from sqlalchemy.exc import SQLAlchemyError
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Dict, Any
 from datetime import datetime
 from ..models.promo_code import PromoCode
 from ..models.offer import Offer
@@ -279,3 +279,162 @@ class PromoCodeService:
         except SQLAlchemyError:
             session.rollback()
             return None
+    
+    @staticmethod
+    async def update_promo_code(
+        session: AsyncSession,
+        promo_code_id: uuid.UUID,
+        promo_code_data: dict
+    ) -> Optional[PromoCodeResponseModel]:
+        """
+        Update an existing promo code.
+        
+        Args:
+            session: Database session
+            promo_code_id: Promo code UUID
+            promo_code_data: Update data dictionary
+            
+        Returns:
+            Updated PromoCodeResponseModel or None if not found
+        """
+        try:
+            statement = select(PromoCode).where(PromoCode.id == promo_code_id)
+            promo_code = (await session.exec(statement)).first()
+            
+            if not promo_code:
+                return None
+            
+            # Update fields
+            for field, value in promo_code_data.items():
+                if hasattr(promo_code, field) and value is not None:
+                    setattr(promo_code, field, value)
+            
+            await session.commit()
+            await session.refresh(promo_code)
+            
+            # Convert to response model
+            promo_dict = promo_code.__dict__.copy()
+            promo_dict['discount_type'] = getattr(promo_code, 'discount_type', None)
+            promo_dict['discount_value'] = getattr(promo_code, 'discount_value', None)
+            promo_dict['is_valid'] = getattr(promo_code, 'is_valid', True)
+            promo_dict['remaining_uses'] = getattr(promo_code, 'remaining_uses', None)
+            
+            return PromoCodeResponseModel.model_validate(promo_dict)
+            
+        except SQLAlchemyError as e:
+            await session.rollback()
+            raise e
+
+    @staticmethod
+    async def delete_promo_code(
+        session: AsyncSession,
+        promo_code_id: uuid.UUID
+    ) -> bool:
+        """
+        Delete a promo code.
+        
+        Args:
+            session: Database session
+            promo_code_id: Promo code UUID
+            
+        Returns:
+            True if deleted, False if not found
+        """
+        try:
+            statement = select(PromoCode).where(PromoCode.id == promo_code_id)
+            promo_code = (await session.exec(statement)).first()
+            
+            if not promo_code:
+                return False
+            
+            await session.delete(promo_code)
+            await session.commit()
+            return True
+            
+        except SQLAlchemyError as e:
+            await session.rollback()
+            raise e
+
+    @staticmethod
+    async def get_promo_code_stats(session: AsyncSession) -> Dict[str, Any]:
+        """
+        Get promo code statistics for admin dashboard.
+        
+        Args:
+            session: Database session
+            
+        Returns:
+            Dictionary with promo code statistics
+        """
+        try:
+            # Total promo codes
+            total_query = select(func.count(PromoCode.id))
+            total_result = await session.exec(total_query)
+            total_promo_codes = total_result.one()
+            
+            # Active promo codes
+            active_query = select(func.count(PromoCode.id)).where(PromoCode.is_active == True)
+            active_result = await session.exec(active_query)
+            active_promo_codes = active_result.one()
+            
+            # Valid promo codes (active and within date range)
+            from datetime import datetime
+            current_date = datetime.utcnow().date()
+            valid_query = select(func.count(PromoCode.id)).where(
+                PromoCode.is_active == True,
+                PromoCode.start_date <= current_date,
+                PromoCode.expiry_date >= current_date
+            )
+            valid_result = await session.exec(valid_query)
+            valid_promo_codes = valid_result.one()
+            
+            return {
+                "total_promo_codes": total_promo_codes,
+                "active_promo_codes": active_promo_codes,
+                "inactive_promo_codes": total_promo_codes - active_promo_codes,
+                "valid_promo_codes": valid_promo_codes
+            }
+            
+        except SQLAlchemyError as e:
+            raise e
+
+    @staticmethod
+    async def get_promo_code_by_id(
+        session: AsyncSession,
+        promo_code_id: uuid.UUID
+    ) -> Optional[PromoCodeResponseModel]:
+        """
+        Get a specific promo code by ID.
+        
+        Args:
+            session: Database session
+            promo_code_id: Promo code UUID
+            
+        Returns:
+            PromoCodeResponseModel or None if not found
+        """
+        try:
+            statement = (
+                select(PromoCode)
+                .options(selectinload(PromoCode.offer))
+                .where(PromoCode.id == promo_code_id)
+            )
+            promo_code = (await session.exec(statement)).first()
+            
+            if not promo_code:
+                return None
+            
+            # Convert to response model
+            promo_dict = promo_code.__dict__.copy()
+            if hasattr(promo_code, 'offer') and promo_code.offer:
+                offer = promo_code.offer
+                promo_dict['offer_id'] = offer.id
+            promo_dict['discount_type'] = getattr(promo_code, 'discount_type', None)
+            promo_dict['discount_value'] = getattr(promo_code, 'discount_value', None)
+            promo_dict['is_valid'] = getattr(promo_code, 'is_valid', True)
+            promo_dict['remaining_uses'] = getattr(promo_code, 'remaining_uses', None)
+            
+            return PromoCodeResponseModel.model_validate(promo_dict)
+            
+        except SQLAlchemyError as e:
+            raise e

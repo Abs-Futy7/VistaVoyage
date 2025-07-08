@@ -1,4 +1,5 @@
 import { apiClient } from '../client';
+import { API_CONFIG } from '../config';
 import { ApiResponse } from '../types';
 
 export interface Destination {
@@ -33,7 +34,7 @@ export interface DestinationListResponse {
 export const destinationService = {
   async getDestinationById(id: string): Promise<Destination> {
     try {
-      const response = await apiClient.get<Destination>(`/api/v1/user/destinations/${id}`);
+      const response = await apiClient.get<Destination>(API_CONFIG.ENDPOINTS.DESTINATIONS.BY_ID(id));
       
       if (response.success && response.data) {
         const destination = response.data;
@@ -63,7 +64,7 @@ export const destinationService = {
         ...(filters?.region && { region: filters.region }),
       });
 
-      const response = await apiClient.get<DestinationListResponse>(`/api/v1/user/destinations?${queryParams.toString()}`);
+      const response = await apiClient.get<DestinationListResponse>(`${API_CONFIG.ENDPOINTS.DESTINATIONS.BASE}?${queryParams.toString()}`);
       
       if (response.success && response.data) {
         const transformedDestinations = response.data.destinations.map((destination) => ({

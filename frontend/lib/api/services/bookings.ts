@@ -77,7 +77,7 @@ export class BookingService {
       if (request.package_id) params.append('package_id', request.package_id);
 
       const response = await apiClient.post<PromoValidationResponse>(
-        `${API_CONFIG.ENDPOINTS.USER_API.BOOKINGS.BASE}/validate-promo?${params.toString()}`
+        `${API_CONFIG.ENDPOINTS.BOOKINGS.BASE}/validate-promo?${params.toString()}`
       );
       
       return response;
@@ -94,7 +94,7 @@ export class BookingService {
   async createBooking(bookingData: CreateBookingRequest): Promise<ApiResponse<Booking>> {
     try {
       const response = await apiClient.post<Booking>(
-        API_CONFIG.ENDPOINTS.USER_API.BOOKINGS.CREATE,
+        API_CONFIG.ENDPOINTS.BOOKINGS.CREATE,
         bookingData
       );
       
@@ -117,7 +117,7 @@ export class BookingService {
       if (status) params.append('status', status);
 
       const response = await apiClient.get<BookingListResponse>(
-        `${API_CONFIG.ENDPOINTS.USER_API.BOOKINGS.BASE}?${params.toString()}`
+        `${API_CONFIG.ENDPOINTS.BOOKINGS.BASE}?${params.toString()}`
       );
       
       return response;
@@ -134,7 +134,7 @@ export class BookingService {
   async getBookingById(id: string): Promise<ApiResponse<Booking>> {
     try {
       const response = await apiClient.get<Booking>(
-        API_CONFIG.ENDPOINTS.USER_API.BOOKINGS.BY_ID(id)
+        API_CONFIG.ENDPOINTS.BOOKINGS.BY_ID(id)
       );
       
       return response;
@@ -151,7 +151,7 @@ export class BookingService {
   async cancelBooking(id: string): Promise<ApiResponse<{ message: string }>> {
     try {
       const response = await apiClient.post<{ message: string }>(
-        API_CONFIG.ENDPOINTS.USER_API.BOOKINGS.CANCEL(id)
+        API_CONFIG.ENDPOINTS.BOOKINGS.CANCEL(id)
       );
       
       return response;
@@ -168,7 +168,7 @@ export class BookingService {
   async makePayment(id: string, amount: number): Promise<ApiResponse<Booking>> {
     try {
       const response = await apiClient.patch<Booking>(
-        API_CONFIG.ENDPOINTS.USER_API.BOOKINGS.PAYMENT(id),
+        API_CONFIG.ENDPOINTS.BOOKINGS.PAYMENT(id),
         { 
           booking_id: id,
           amount: amount,

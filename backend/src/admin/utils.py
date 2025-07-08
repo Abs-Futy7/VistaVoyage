@@ -258,3 +258,11 @@ def build_response_metadata(page: int, limit: int, total_count: int) -> dict:
             "has_prev": page > 1
         }
     }
+
+
+def send_password_reset_email(*args, **kwargs):
+    raise NotImplementedError("send_password_reset_email is not implemented yet.")
+
+
+def verify_password_reset_token(*args, **kwargs):
+    raise NotImplementedError("verify_password_reset_token is not implemented yet.")

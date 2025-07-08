@@ -1,4 +1,5 @@
 import { apiClient } from '../client';
+import { API_CONFIG } from '../config';
 import { ApiResponse } from '../types';
 
 export interface PromoCode {
@@ -44,7 +45,7 @@ export interface ValidatePromoCodeResponse {
 export const promoCodeService = {
   async getPromoCodes(): Promise<PromoCodeListResponse> {
     try {
-      const response = await apiClient.get<PromoCodeListResponse>('/api/v1/user/promo_codes');
+      const response = await apiClient.get<PromoCodeListResponse>(API_CONFIG.ENDPOINTS.PROMO_CODES.BASE);
       
       if (response.success && response.data) {
         return response.data;
@@ -59,7 +60,7 @@ export const promoCodeService = {
 
   async validatePromoCode(data: ValidatePromoCodeRequest): Promise<ValidatePromoCodeResponse> {
     try {
-      const response = await apiClient.post<ValidatePromoCodeResponse>('/api/v1/user/promo_codes/validate', data);
+      const response = await apiClient.post<ValidatePromoCodeResponse>(API_CONFIG.ENDPOINTS.PROMO_CODES.VALIDATE, data);
       
       if (response.success && response.data) {
         return response.data;
@@ -74,7 +75,7 @@ export const promoCodeService = {
 
   async getPromoCodeByCode(code: string): Promise<PromoCode> {
     try {
-      const response = await apiClient.get<PromoCode>(`/api/v1/user/promo_codes/code/${code}`);
+      const response = await apiClient.get<PromoCode>(API_CONFIG.ENDPOINTS.PROMO_CODES.BY_CODE(code));
       
       if (response.success && response.data) {
         return response.data;

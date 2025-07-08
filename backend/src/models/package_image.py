@@ -3,16 +3,15 @@ from sqlalchemy import ForeignKey
 import sqlalchemy.dialects.postgresql as pg
 import uuid
 from datetime import datetime
-from typing import Optional, List, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .package import Package
-    
 
 
-class Activity(SQLModel, table=True):
-    """Activity model for activities included in packages."""
-    __tablename__ = "activities"
+class PackageImage(SQLModel, table=True):
+    """Package image model for storing individual package images."""
+    __tablename__ = "package_images"
     
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
@@ -22,41 +21,45 @@ class Activity(SQLModel, table=True):
             primary_key=True
         )
     )
-    name: str = Field(
+    
+    package_id: uuid.UUID = Field(
         sa_column=Column(
-            pg.VARCHAR(255),
+            pg.UUID(as_uuid=True),
+            ForeignKey("packages.id", ondelete="CASCADE"),
             nullable=False
         )
     )
-    description: Optional[str] = Field(
-        default=None,
+    
+    image_url: str = Field(
         sa_column=Column(
-            pg.TEXT,
-            nullable=True
+            pg.VARCHAR(500),
+            nullable=False
         )
     )
-    duration_hours: Optional[float] = Field(
+    
+    alt_text: Optional[str] = Field(
         default=None,
         sa_column=Column(
-            pg.NUMERIC(4, 2),
+            pg.VARCHAR(255),
             nullable=True
         )
     )
     
-    featured_image: Optional[str] = Field(
-        default=None,
+    display_order: int = Field(
+        default=0,
         sa_column=Column(
-            pg.TEXT,
-            nullable=True
+            pg.INTEGER,
+            nullable=False,
+            default=0
         )
     )
     
-    is_active: bool = Field(
-        default=True,
+    is_primary: bool = Field(
+        default=False,
         sa_column=Column(
             pg.BOOLEAN,
             nullable=False,
-            default=True
+            default=False
         )
     )
     
@@ -68,17 +71,8 @@ class Activity(SQLModel, table=True):
         )
     )
     
-    updated_at: datetime = Field(
-        sa_column=Column(
-            pg.TIMESTAMP,
-            default=datetime.now,
-            onupdate=datetime.now,
-            nullable=False
-        )
-    )
-    
     # Relationships
-    # Note: Many-to-many relationship with Package will be handled through PackageActivityLink
-
+    package: "Package" = Relationship(back_populates="images")
+    
     def __repr__(self):
-        return f"<Activity {self.name}>"
+        return f"<PackageImage {self.image_url}>"

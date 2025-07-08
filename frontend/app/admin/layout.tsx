@@ -29,6 +29,8 @@ import Image from 'next/image';
 import { Toaster } from 'sonner';
 import { adminAuthService, AdminModel } from '@/lib/api/services/admin-auth';
 import { toast } from 'sonner';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { Dialog as ProfileDialog, DialogContent as ProfileDialogContent, DialogHeader as ProfileDialogHeader, DialogTitle as ProfileDialogTitle } from '@/components/ui/dialog';
 
 function AdminLayout({children}: {children: React.ReactNode}) {
   const pathname = usePathname();
@@ -38,6 +40,8 @@ function AdminLayout({children}: {children: React.ReactNode}) {
   const [loading, setLoading] = useState(true);
   const [isCreateAdminOpen, setIsCreateAdminOpen] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const [newAdmin, setNewAdmin] = useState({
     username: '',
@@ -45,6 +49,12 @@ function AdminLayout({children}: {children: React.ReactNode}) {
     email: '',
     password: '',
     role: 'admin'
+  });
+
+  // For profile editing, use a separate state to avoid direct mutation of currentAdmin
+  const [profileEdit, setProfileEdit] = useState<{ full_name: string; email: string }>({
+    full_name: '',
+    email: ''
   });
 
   // Skip auth check for login page
@@ -274,23 +284,129 @@ function AdminLayout({children}: {children: React.ReactNode}) {
             <h1 className="text-xl font-medium text-gray-800">Welcome Back, {currentAdmin?.full_name || 'Admin'}!</h1>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
-              <div className="text-right text-sm">
-                <p className="font-medium text-gray-800">{currentAdmin?.full_name}</p>
-                <p className="text-gray-600 capitalize">{currentAdmin?.role}</p>
-              </div>
-              <Avatar>
-                <AvatarImage src="/images/avatar.png" />
-                <AvatarFallback className="bg-blue-600 text-white">
-                  {currentAdmin?.full_name?.split(' ').map(n => n[0]).join('') || 'AD'}
-                </AvatarFallback>
-              </Avatar>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <div className="flex items-center gap-3 cursor-pointer">
+                  <div className="text-right text-sm">
+                    <p className="font-medium text-gray-800">{currentAdmin?.full_name}</p>
+                    <p className="text-gray-600 capitalize">{currentAdmin?.role}</p>
+                  </div>
+                  <Avatar>
+                    <AvatarImage src="/images/avatar.png" />
+                    <AvatarFallback className="bg-blue-600 text-white">
+                      {currentAdmin?.full_name?.split(' ').map(n => n[0]).join('') || 'AD'}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setProfileOpen(true)}>Profile</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setChangePasswordOpen(true)}>Change Password</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
+        {/* Profile Modal */}
+        <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen}>
+          <ProfileDialogContent className="max-w-xl">
+            <ProfileDialogHeader>
+              <ProfileDialogTitle>My Profile</ProfileDialogTitle>
+            </ProfileDialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="profile_full_name">Full Name</Label>
+                <Input
+                  id="profile_full_name"
+                  value={profileEdit.full_name}
+                  onChange={e => setProfileEdit({ ...profileEdit, full_name: e.target.value })}
+                  disabled={!currentAdmin}
+                />
+              </div>
+              <div>
+                <Label htmlFor="profile_email">Email</Label>
+                <Input
+                  id="profile_email"
+                  type="email"
+                  value={profileEdit.email}
+                  onChange={e => setProfileEdit({ ...profileEdit, email: e.target.value })}
+                  disabled={!currentAdmin}
+                />
+              </div>
+              <div>
+                <Label htmlFor="profile_username">Username</Label>
+                <Input
+                  id="profile_username"
+                  value={currentAdmin?.username || ''}
+                  disabled
+                />
+              </div>
+              <div>
+                <Label htmlFor="profile_role">Role</Label>
+                <Input
+                  id="profile_role"
+                  value={currentAdmin?.role || ''}
+                  disabled
+                />
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  onClick={async () => {
+                    try {
+                      await adminAuthService.updateProfile({
+                        full_name: profileEdit.full_name,
+                        email: profileEdit.email
+                      });
+                      // Refetch admin info after update
+                      const updated = await adminAuthService.getCurrentAdmin();
+                      setCurrentAdmin(updated);
+                      setProfileEdit({
+                        full_name: updated.full_name,
+                        email: updated.email
+                      });
+                      toast.success('Profile updated successfully');
+                    } catch (error: any) {
+                      toast.error(error.message || 'Failed to update profile');
+                    }
+                  }}
+                  disabled={!currentAdmin}
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          </ProfileDialogContent>
+        </ProfileDialog>
+        {/* Change Password Modal (placeholder) */}
+        <ProfileDialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
+          <ProfileDialogContent className="max-w-md">
+            <ProfileDialogHeader>
+              <ProfileDialogTitle>Change Password</ProfileDialogTitle>
+            </ProfileDialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="current_password">Current Password</Label>
+                <Input id="current_password" type="password" />
+              </div>
+              <div>
+                <Label htmlFor="new_password">New Password</Label>
+                <Input id="new_password" type="password" />
+              </div>
+              <div>
+                <Label htmlFor="confirm_password">Confirm New Password</Label>
+                <Input id="confirm_password" type="password" />
+              </div>
+              <div className="flex justify-end">
+                <Button variant="outline" onClick={() => setChangePasswordOpen(false)}>Cancel</Button>
+                <Button>Change Password</Button>
+              </div>
+            </div>
+          </ProfileDialogContent>
+        </ProfileDialog>
         {/* Page Content */}
         <div className="p-6">
+          {/* Admin Info Section removed from here */}
           {children}
         </div>
       </div>

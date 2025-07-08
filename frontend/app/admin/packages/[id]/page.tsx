@@ -44,6 +44,11 @@ export default function PackageDetailsPage({ params }: PackageDetailsPageProps) 
     try {
       setLoading(true);
       const data = await adminService.getPackageById(resolvedParams.id);
+      console.log('Package data from backend:', data);
+      console.log('Image gallery type:', typeof data.image_gallery, Array.isArray(data.image_gallery) ? 'Is Array' : 'Not Array');
+      if (data.image_gallery) {
+        console.log('Image gallery content:', data.image_gallery);
+      }
       setPackageData(data);
     } catch (error: any) {
       console.error('Failed to fetch package data:', error);
@@ -100,13 +105,23 @@ export default function PackageDetailsPage({ params }: PackageDetailsPageProps) 
     });
   };
 
-  const parseGallery = (galleryString?: string) => {
-    if (!galleryString) return [];
-    try {
-      return JSON.parse(galleryString);
-    } catch {
-      return [];
+  const getGalleryImages = (imageGallery?: string[] | null) => {
+    // If image_gallery is already an array, use it directly
+    if (Array.isArray(imageGallery)) {
+      return imageGallery;
     }
+    
+    // If it's a string (for backward compatibility), try to parse it
+    if (typeof imageGallery === 'string') {
+      try {
+        return JSON.parse(imageGallery);
+      } catch {
+        return [];
+      }
+    }
+    
+    // Default to empty array
+    return [];
   };
 
   if (loading) {
@@ -134,7 +149,7 @@ export default function PackageDetailsPage({ params }: PackageDetailsPageProps) 
     );
   }
 
-  const gallery = parseGallery(packageData.image_gallery);
+  const gallery = getGalleryImages(packageData.image_gallery);
 
   return (
     <div className="space-y-6">
@@ -375,6 +390,10 @@ export default function PackageDetailsPage({ params }: PackageDetailsPageProps) 
                         src={image}
                         alt={`Gallery ${index + 1}`}
                         className="w-full h-20 object-cover rounded"
+                        onError={(e) => {
+                          // Fallback if image fails to load
+                          e.currentTarget.src = 'https://via.placeholder.com/150?text=Image+Error';
+                        }}
                       />
                     ))}
                   </div>

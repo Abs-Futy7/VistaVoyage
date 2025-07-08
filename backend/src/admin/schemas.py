@@ -39,3 +39,13 @@ class AdminUpdateModel(BaseModel):
 class AdminPasswordChangeModel(BaseModel):
     current_password: str = Field(min_length=6)
     new_password: str = Field(min_length=6)
+
+
+class AdminPasswordResetRequestModel(BaseModel):
+    email: EmailStr
+
+
+class AdminPasswordResetModel(BaseModel):
+    email: EmailStr
+    otp: str = Field(min_length=6, max_length=6)
+    new_password: str = Field(min_length=6)

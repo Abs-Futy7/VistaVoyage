@@ -615,7 +615,11 @@ export default function AdminPackagesPage() {
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div className="flex items-center text-gray-600">
                       <Clock className="h-3 w-3 mr-1" />
-                      <span>{pkg.duration_days}D/{pkg.duration_nights}N</span>
+                      <span>
+                        {typeof pkg.duration_days === 'number' && typeof pkg.duration_nights === 'number'
+                          ? `${pkg.duration_days}D/${pkg.duration_nights}N`
+                          : 'N/A'}
+                      </span>
                     </div>
                     <div className="flex items-center text-gray-600">
                       <MapPin className="h-3 w-3 mr-1" />

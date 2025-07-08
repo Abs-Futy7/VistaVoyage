@@ -3,16 +3,15 @@ from sqlalchemy import ForeignKey
 import sqlalchemy.dialects.postgresql as pg
 import uuid
 from datetime import datetime
-from typing import Optional, List, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .package import Package
-    
 
 
-class Activity(SQLModel, table=True):
-    """Activity model for activities included in packages."""
-    __tablename__ = "activities"
+class PackageDetails(SQLModel, table=True):
+    """Detailed content for packages - normalized from main package table."""
+    __tablename__ = "package_details"
     
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
@@ -22,41 +21,53 @@ class Activity(SQLModel, table=True):
             primary_key=True
         )
     )
-    name: str = Field(
-        sa_column=Column(
-            pg.VARCHAR(255),
-            nullable=False
-        )
-    )
-    description: Optional[str] = Field(
-        default=None,
-        sa_column=Column(
-            pg.TEXT,
-            nullable=True
-        )
-    )
-    duration_hours: Optional[float] = Field(
-        default=None,
-        sa_column=Column(
-            pg.NUMERIC(4, 2),
-            nullable=True
-        )
-    )
     
-    featured_image: Optional[str] = Field(
-        default=None,
+    package_id: uuid.UUID = Field(
         sa_column=Column(
-            pg.TEXT,
-            nullable=True
-        )
-    )
-    
-    is_active: bool = Field(
-        default=True,
-        sa_column=Column(
-            pg.BOOLEAN,
+            pg.UUID(as_uuid=True),
+            ForeignKey("packages.id", ondelete="CASCADE"),
             nullable=False,
-            default=True
+            unique=True  # One-to-one relationship
+        )
+    )
+    
+    highlights: Optional[str] = Field(
+        default=None,
+        sa_column=Column(
+            pg.TEXT,
+            nullable=True
+        )
+    )
+    
+    itinerary: Optional[str] = Field(
+        default=None,
+        sa_column=Column(
+            pg.TEXT,
+            nullable=True
+        )
+    )
+    
+    inclusions: Optional[str] = Field(
+        default=None,
+        sa_column=Column(
+            pg.TEXT,
+            nullable=True
+        )
+    )
+    
+    exclusions: Optional[str] = Field(
+        default=None,
+        sa_column=Column(
+            pg.TEXT,
+            nullable=True
+        )
+    )
+    
+    terms_conditions: Optional[str] = Field(
+        default=None,
+        sa_column=Column(
+            pg.TEXT,
+            nullable=True
         )
     )
     
@@ -78,7 +89,7 @@ class Activity(SQLModel, table=True):
     )
     
     # Relationships
-    # Note: Many-to-many relationship with Package will be handled through PackageActivityLink
+    package: "Package" = Relationship(back_populates="details")
 
     def __repr__(self):
-        return f"<Activity {self.name}>"
+        return f"<PackageDetails for Package {self.package_id}>"

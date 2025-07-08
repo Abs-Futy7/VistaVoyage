@@ -56,13 +56,33 @@ async def get_dashboard_stats(session: AsyncSession = Depends(get_session)):
         published_blogs = published_blogs_result.first() or 0
         
         # Get booking stats by status
-        booking_stats = await booking_service.get_booking_stats(session)
+        try:
+            # Try using the comprehensive version first
+            booking_stats = await booking_service.get_booking_stats(session)
+            # Ensure bookingsByStatus is always an object, not None
+            if not booking_stats:
+                booking_stats = {"bookings_by_status": {}}
+            elif "bookings_by_status" not in booking_stats or booking_stats["bookings_by_status"] is None:
+                booking_stats["bookings_by_status"] = {}
+        except Exception as stats_error:
+            # Fall back to the simple version if the comprehensive one fails
+            try:
+                booking_stats_by_status = await booking_service.get_booking_stats_by_status(session)
+                booking_stats = {"bookings_by_status": booking_stats_by_status or {}}
+            except Exception as inner_error:
+                print(f"Error getting booking stats: {stats_error} / {inner_error}")
+                booking_stats = {"bookings_by_status": {}}  # Default empty dict if both methods fail
         
         # Calculate revenue from bookings
-        total_revenue_result = await session.exec(
-            select(func.sum(Booking.total_amount))
-        )
-        total_revenue_decimal = total_revenue_result.first() or 0.0
+        from decimal import Decimal
+        
+        # Get all confirmed bookings
+        confirmed_bookings_query = select(Booking).where(Booking.status == 'confirmed')
+        result = await session.exec(confirmed_bookings_query)
+        confirmed_bookings = result.all()
+        
+        # Calculate total revenue manually
+        total_revenue_decimal = sum((Decimal(str(booking.total_amount)) for booking in confirmed_bookings), Decimal('0'))
         total_revenue = float(total_revenue_decimal) if total_revenue_decimal else 0.0
         
         # Get recent bookings (limit 5)
@@ -130,13 +150,16 @@ async def get_dashboard_stats(session: AsyncSession = Depends(get_session)):
                 "lastMonth": round(total_revenue * 0.16, 2),  # Mock calculation
                 "growth": 25  # Mock calculation
             },
-            "bookingsByStatus": booking_stats,
-            "recentBookings": recent_bookings,
-            "recentUsers": recent_users,
-            "recentBlogs": recent_blogs
+            "bookingsByStatus": booking_stats.get("bookings_by_status", {}),
+            "recentBookings": recent_bookings or [],
+            "recentUsers": recent_users or [],
+            "recentBlogs": recent_blogs or []
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Dashboard stats error: {str(e)}\n{error_details}")
+        raise HTTPException(status_code=500, detail=f"Failed to get dashboard stats: {str(e)}")
 
 
 @dashboard_router.get("/system/stats")

@@ -12,6 +12,9 @@ if TYPE_CHECKING:
     from .trip_type import TripType
     from .offer import Offer
     from .activity import Activity
+from .package_image import PackageImage
+from .package_details import PackageDetails
+from .package_schedule import PackageSchedule
 
 
 class PackageDifficulty(str, Enum):
@@ -58,19 +61,7 @@ class Package(SQLModel, table=True):
     )
      
     
-    duration_days: int = Field(
-        sa_column=Column(
-            pg.INTEGER,
-            nullable=False
-        )
-    )
-    
-    duration_nights: int = Field(
-        sa_column=Column(
-            pg.INTEGER,
-            nullable=False
-        )
-    )
+
     
     destination_id: uuid.UUID = Field(
         sa_column=Column(
@@ -141,103 +132,33 @@ class Package(SQLModel, table=True):
         )
     )
     
-    # Additional content fields for detailed package information
-    highlights: Optional[str] = Field(
-        default=None,
-        sa_column=Column(
-            pg.TEXT,
-            nullable=True
-        )
-    )
-    
-    itinerary: Optional[str] = Field(
-        default=None,
-        sa_column=Column(
-            pg.TEXT,
-            nullable=True
-        )
-    )
-    
-    inclusions: Optional[str] = Field(
-        default=None,
-        sa_column=Column(
-            pg.TEXT,
-            nullable=True
-        )
-    )
-    
-    exclusions: Optional[str] = Field(
-        default=None,
-        sa_column=Column(
-            pg.TEXT,
-            nullable=True
-        )
-    )
-    
-    terms_conditions: Optional[str] = Field(
-        default=None,
-        sa_column=Column(
-            pg.TEXT,
-            nullable=True
-        )
-    )
-    
-    image_gallery: Optional[List[str]] = Field(
-        default=None,
-        sa_column=Column(
-            pg.JSON,  # JSON array of image URLs
-            nullable=True
-        )
-    )
-    
-    max_group_size: Optional[int] = Field(
-        default=None,
-        sa_column=Column(
-            pg.INTEGER,
-            nullable=True
-        )
-    )
-    
-    min_age: Optional[int] = Field(
-        default=None,
-        sa_column=Column(
-            pg.INTEGER,
-            nullable=True
-        )
-    )
-    
-    difficulty_level: Optional[PackageDifficulty] = Field(
-        default=None,
-        sa_column=Column(
-            pg.VARCHAR(50),
-            nullable=True
-        )
-    )
-    
-    available_from: Optional[datetime] = Field(
-        default=None,
-        sa_column=Column(
-            pg.TIMESTAMP,
-            nullable=True
-        )
-    )
-    
-    available_until: Optional[datetime] = Field(
-        default=None,
-        sa_column=Column(
-            pg.TIMESTAMP,
-            nullable=True
-        )
-    )
+
 
     # Relationships
     destination: "Destination" = Relationship(back_populates="packages")
     trip_type: "TripType" = Relationship(back_populates="packages")
     offer: Optional["Offer"] = Relationship(back_populates="packages")
     bookings: List["Booking"] = Relationship(back_populates="package")
+    images: List["PackageImage"] = Relationship(back_populates="package", cascade_delete=True)
+    details: Optional["PackageDetails"] = Relationship(back_populates="package", cascade_delete=True)
+    schedule: Optional["PackageSchedule"] = Relationship(back_populates="package", cascade_delete=True)
 
     def __repr__(self):
         return f"<Package {self.title}>"
+
+    @property
+    def image_gallery(self) -> List[str]:
+        """Get list of image URLs ordered by display_order."""
+        return [img.image_url for img in sorted(self.images, key=lambda x: x.display_order)]
+    
+    @property
+    def primary_image(self) -> Optional[str]:
+        """Get the primary image URL."""
+        primary_images = [img for img in self.images if img.is_primary]
+        if primary_images:
+            return primary_images[0].image_url
+        # Fallback to featured_image or first image
+        return self.featured_image or (self.images[0].image_url if self.images else None)
 
     @property
     def effective_price(self) -> float:
@@ -252,9 +173,12 @@ class Package(SQLModel, table=True):
     @property
     def is_available(self) -> bool:
         """Check if the package is currently available for booking."""
+        if not self.schedule:
+            return self.is_active
+        
         now = datetime.now()
         return (
             self.is_active and
-            (self.available_from is None or self.available_from <= now) and
-            (self.available_until is None or now <= self.available_until)
+            (self.schedule.available_from is None or self.schedule.available_from <= now) and
+            (self.schedule.available_until is None or now <= self.schedule.available_until)
         )

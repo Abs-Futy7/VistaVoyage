@@ -3,6 +3,7 @@ from typing import Optional
 from datetime import datetime
 from enum import Enum
 import uuid
+from .booking_payment_schemas import BookingPaymentResponseModel
 
 
 class BookingStatus(str, Enum):
@@ -22,10 +23,16 @@ class PaymentStatus(str, Enum):
 
 
 class BookingCreateModel(BaseModel):
+    """Schema for creating a booking"""
     package_id: uuid.UUID
     total_amount: float = Field(gt=0)
     promo_code_id: Optional[uuid.UUID] = None
     promo_code: Optional[str] = Field(None, min_length=1, max_length=50)
+    
+    # Payment data for initial payment record
+    discount_amount: float = Field(ge=0, default=0.0)
+    tax_amount: float = Field(ge=0, default=0.0)
+    initial_payment: float = Field(ge=0, default=0.0)
     
     @validator('promo_code')
     def validate_promo_code(cls, v, values):
@@ -52,11 +59,9 @@ class PromoValidationResponse(BaseModel):
 
 
 class BookingUpdateModel(BaseModel):
+    """Schema for updating a booking"""
     status: Optional[BookingStatus] = None
     payment_status: Optional[PaymentStatus] = None
-    total_amount: Optional[float] = Field(None, gt=0)
-    paid_amount: Optional[float] = Field(None, ge=0)
-    discount_amount: Optional[float] = Field(None, ge=0)
     cancellation_reason: Optional[str] = None
 
 
@@ -64,16 +69,21 @@ class BookingStatusUpdateModel(BaseModel):
     status: BookingStatus
 
 
+class PaymentRequestModel(BaseModel):
+    """Schema for processing payments"""
+    payment_amount: float = Field(gt=0)
+    payment_method: Optional[str] = "card"
+    payment_reference: Optional[str] = None
+
+
 class BookingResponseModel(BaseModel):
+    """Basic booking response model"""
     id: uuid.UUID
     package_id: uuid.UUID
     user_id: uuid.UUID
     promo_code_id: Optional[uuid.UUID] = None
     status: str
     payment_status: str
-    total_amount: float
-    paid_amount: float
-    discount_amount: float
     booking_date: datetime
     cancellation_date: Optional[datetime] = None
     cancellation_reason: Optional[str] = None
@@ -92,7 +102,20 @@ class BookingResponseModel(BaseModel):
         from_attributes = True
 
 
+class BookingDetailResponseModel(BookingResponseModel):
+    """Detailed booking response with payment information"""
+    payment: Optional[BookingPaymentResponseModel] = None
+    
+    # Computed fields from payment for backward compatibility
+    total_amount: Optional[float] = None
+    paid_amount: Optional[float] = None
+    discount_amount: Optional[float] = None
+    outstanding_amount: Optional[float] = None
+    is_fully_paid: Optional[bool] = None
+
+
 class BookingListResponseModel(BaseModel):
+    """Response model for paginated booking lists"""
     bookings: list[BookingResponseModel]
     total: int
     page: int

@@ -72,8 +72,6 @@ class PromoCodeResponseModel(BaseModel):
     # Legacy fields for backward compatibility
     offer_id: Optional[uuid.UUID] = None
     max_usage: Optional[int] = None
-    current_usage: int
-    
     # Computed fields
     remaining_uses: Optional[int] = None
     is_valid: bool = True

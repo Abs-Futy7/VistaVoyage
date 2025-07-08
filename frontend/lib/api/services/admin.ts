@@ -95,8 +95,19 @@ export interface AdminPackage {
   updated_at: string;
   available_from?: string;
   available_until?: string;
+  // --- Added fields for full backend compatibility ---
+  image_gallery?: string[];
+  images?: any[];
+  details?: any;
+  schedule?: any;
+  destination_name?: string;
+  trip_type_name?: string;
+  offer_title?: string;
+  highlights?: string;
+  itinerary?: string;
 }
 
+// Package Create Request
 export interface PackageCreateRequest {
   title: string;
   description: string;
@@ -113,6 +124,7 @@ export interface PackageCreateRequest {
   available_until?: string;
 }
 
+// Package Update Request
 export interface PackageUpdateRequest {
   title?: string;
   description?: string;

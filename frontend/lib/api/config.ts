@@ -14,35 +14,49 @@ export const API_CONFIG = {
     },
     // User endpoints
     USERS: {
-      BASE: '/api/v1/users',
-      PROFILE: '/api/v1/users/profile',
-      BOOKINGS: '/api/v1/users/bookings',
-      WISHLIST: '/api/v1/users/wishlist'
+      BASE: '/api/v1/user',
+      PROFILE: '/api/v1/user/profile',
+      BOOKINGS: '/api/v1/user/bookings',
+      WISHLIST: '/api/v1/user/wishlist'
     },
     // Package endpoints
     PACKAGES: {
-      BASE: '/api/v1/packages',
-      SEARCH: '/api/v1/packages/search',
-      POPULAR: '/api/v1/packages/popular',
-      BY_ID: (id: string) => `/api/v1/packages/${id}`
+      BASE: '/api/v1/user/packages',
+      SEARCH: '/api/v1/user/packages/search',
+      POPULAR: '/api/v1/user/packages/popular',
+      FEATURED: '/api/v1/user/packages/featured',
+      BY_ID: (id: string) => `/api/v1/user/packages/${id}`
     },
     // Booking endpoints
     BOOKINGS: {
-      BASE: '/api/v1/bookings',
-      CREATE: '/api/v1/bookings',
-      BY_ID: (id: string) => `/api/v1/bookings/${id}`,
-      CANCEL: (id: string) => `/api/v1/bookings/${id}/cancel`
+      BASE: '/api/v1/user/bookings',
+      CREATE: '/api/v1/user/bookings',
+      BY_ID: (id: string) => `/api/v1/user/bookings/${id}`,
+      CANCEL: (id: string) => `/api/v1/user/bookings/${id}/cancel`,
+      PAYMENT: (id: string) => `/api/v1/user/bookings/${id}/payment`
     },
     // Blog endpoints
     BLOGS: {
-      BASE: '/api/v1/blogs',
-      BY_ID: (id: string) => `/api/v1/blogs/${id}`,
-      LATEST: '/api/v1/blogs/latest'
+      BASE: '/api/v1/user/blogs',
+      BY_ID: (id: string) => `/api/v1/user/blogs/${id}`,
+      LATEST: '/api/v1/user/blogs/latest'
     },
     // Destination endpoints
     DESTINATIONS: {
-      BASE: '/api/v1/destinations',
-      POPULAR: '/api/v1/destinations/popular'
+      BASE: '/api/v1/user/destinations',
+      BY_ID: (id: string) => `/api/v1/user/destinations/${id}`,
+      POPULAR: '/api/v1/user/destinations/popular'
+    },
+    // Offers endpoints
+    OFFERS: {
+      BASE: '/api/v1/user/offers',
+      BY_ID: (id: string) => `/api/v1/user/offers/${id}`
+    },
+    // Promo codes endpoints
+    PROMO_CODES: {
+      BASE: '/api/v1/user/promo_codes',
+      VALIDATE: '/api/v1/user/promo_codes/validate',
+      BY_CODE: (code: string) => `/api/v1/user/promo_codes/code/${code}`
     },
     // Admin Authentication endpoints
     ADMIN_AUTH: {
@@ -51,7 +65,8 @@ export const API_CONFIG = {
       REFRESH: '/api/v1/admin/auth/refresh',
       ME: '/api/v1/admin/auth/me',
       CREATE: '/api/v1/admin/auth/create',
-      CHANGE_PASSWORD: '/api/v1/admin/auth/change-password'
+      CHANGE_PASSWORD: '/api/v1/admin/auth/change-password',
+      UPDATE_PROFILE: '/api/v1/admin/auth/update-profile'
     },
     // Admin management endpoints
     ADMIN: {

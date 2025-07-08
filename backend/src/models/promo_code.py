@@ -116,23 +116,7 @@ class PromoCode(SQLModel, table=True):
         )
     )
     
-    # Legacy fields (kept for backward compatibility)
-    max_usage: Optional[int] = Field(
-        default=None,
-        sa_column=Column(
-            pg.INTEGER,
-            nullable=True
-        )
-    )
-    
-    current_usage: int = Field(
-        default=0,
-        sa_column=Column(
-            pg.INTEGER,
-            nullable=False,
-            default=0
-        )
-    )
+
     
     is_active: bool = Field(
         default=True,
@@ -181,10 +165,7 @@ class PromoCode(SQLModel, table=True):
             return False
             
         # Check usage limits
-        usage_count = self.used_count or self.current_usage
-        limit = self.usage_limit or self.max_usage
-        
-        if limit is not None and usage_count >= limit:
+        if self.usage_limit is not None and self.used_count >= self.usage_limit:
             return False
             
         # If linked to offer, check offer validity
@@ -196,17 +177,13 @@ class PromoCode(SQLModel, table=True):
     def increment_usage(self) -> None:
         """Increment the usage count of the promo code."""
         self.used_count += 1
-        self.current_usage += 1  # Keep legacy field in sync
     
     @property 
     def remaining_uses(self) -> Optional[int]:
         """Get the remaining uses for this promo code."""
-        usage_count = self.used_count or self.current_usage
-        limit = self.usage_limit or self.max_usage
-        
-        if limit is None:
+        if self.usage_limit is None:
             return None
-        return max(0, limit - usage_count)
+        return max(0, self.usage_limit - self.used_count)
     
     def calculate_discount(self, amount: float) -> tuple[float, float]:
         """

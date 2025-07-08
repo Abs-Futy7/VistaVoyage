@@ -86,7 +86,7 @@ class AdminService:
     
     async def update_admin(self, admin: Admin, admin_data: AdminUpdateModel, session: AsyncSession) -> Admin:
         """Update admin information"""
-        update_data = admin_data.model_dump(exclude_unset=True)
+        update_data = admin_data.model_dump(exclude_unset=True, exclude={"password"})
         
         for field, value in update_data.items():
             setattr(admin, field, value)

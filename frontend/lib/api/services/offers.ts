@@ -1,4 +1,5 @@
 import { apiClient } from '../client';
+import { API_CONFIG } from '../config';
 import { ApiResponse } from '../types';
 
 export interface Offer {
@@ -28,7 +29,7 @@ export const offerService = {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (search) params.append('search', search);
       
-      const response = await apiClient.get<OfferListResponse>(`/api/v1/user/offers?${params.toString()}`);
+      const response = await apiClient.get<OfferListResponse>(`${API_CONFIG.ENDPOINTS.OFFERS.BASE}?${params.toString()}`);
       
       if (response.success && response.data) {
         return response.data;
@@ -43,7 +44,7 @@ export const offerService = {
 
   async getOfferById(id: string): Promise<Offer> {
     try {
-      const response = await apiClient.get<Offer>(`/api/v1/user/offers/${id}`);
+      const response = await apiClient.get<Offer>(API_CONFIG.ENDPOINTS.OFFERS.BY_ID(id));
       
       if (response.success && response.data) {
         return response.data;
