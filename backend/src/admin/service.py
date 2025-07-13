@@ -73,8 +73,8 @@ class AdminService:
                     "full_name": admin.full_name,
                     "role": admin.role,
                     "is_active": admin.is_active,
-                    "last_login_at": admin.last_login_at.isoformat() + "Z" if admin.last_login_at else None,
-                    "created_at": admin.created_at.isoformat() + "Z"
+                    "created_at": admin.created_at.isoformat() + "Z" if admin.created_at else None,
+                    "updated_at": admin.updated_at.isoformat() + "Z" if admin.updated_at else None
                 }
                 for admin in admins
             ],
@@ -87,10 +87,8 @@ class AdminService:
     async def update_admin(self, admin: Admin, admin_data: AdminUpdateModel, session: AsyncSession) -> Admin:
         """Update admin information"""
         update_data = admin_data.model_dump(exclude_unset=True, exclude={"password"})
-        
         for field, value in update_data.items():
             setattr(admin, field, value)
-        
         admin.updated_at = datetime.now()
         await session.commit()
         await session.refresh(admin)
@@ -126,12 +124,7 @@ class AdminService:
         await session.commit()
         return True
     
-    async def update_last_login(self, admin: Admin, session: AsyncSession) -> Admin:
-        """Update admin's last login time"""
-        admin.last_login_at = datetime.now()
-        await session.commit()
-        await session.refresh(admin)
-        return admin
+    
 
 
 # Global instance

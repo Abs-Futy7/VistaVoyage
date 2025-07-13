@@ -63,8 +63,6 @@ export function useAuth() {
     full_name: string;
     email: string;
     password: string;
-    city: string;
-    country: string;
     phone: string;
     passport: string;
   }) => {

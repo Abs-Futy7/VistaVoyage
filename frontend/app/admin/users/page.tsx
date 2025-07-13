@@ -219,12 +219,7 @@ export default function AdminUserManagePage() {
                   <Mail className="h-4 w-4 mr-2" />
                   {user.email}
                 </div>
-                {user.city && user.country && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    {user.city}, {user.country}
-                  </div>
-                )}
+                {/* Removed city and country fields as per backend model */}
                 <div className="flex items-center text-sm text-gray-600">
                   <Calendar className="h-4 w-4 mr-2" />
                   Joined {new Date(user.createdAt).toLocaleDateString()}
@@ -236,15 +231,7 @@ export default function AdminUserManagePage() {
                   <span className="text-gray-600">Bookings</span>
                   <span className="font-medium">{user.bookingsCount || 0}</span>
                 </div>
-                <div className="flex justify-between text-sm mt-1">
-                  <span className="text-gray-600">Last Login</span>
-                  <span className="font-medium">
-                    {user.lastLoginAt 
-                      ? new Date(user.lastLoginAt).toLocaleDateString()
-                      : 'Never'
-                    }
-                  </span>
-                </div>
+                {/* Last Login removed as per backend model */}
               </div>
             </CardContent>
           </Card>

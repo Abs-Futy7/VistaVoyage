@@ -35,20 +35,6 @@ class User(SQLModel, table=True):
             nullable=False
         )
     )
-    city: Optional[str] = Field(
-        default=None,
-        sa_column=Column(
-            pg.VARCHAR(100),
-            nullable=True
-        )
-    )
-    country: Optional[str] = Field(
-        default=None,
-        sa_column=Column(
-            pg.VARCHAR(100),
-            nullable=True
-        )
-    )
     phone: Optional[str] = Field(
         default=None,
         sa_column=Column(
@@ -59,7 +45,8 @@ class User(SQLModel, table=True):
     passport: str = Field(
         sa_column=Column(
             pg.VARCHAR(255),
-            nullable=False
+            nullable=False,
+            unique=True
         )
     )
     password_hash: str = Field(
@@ -83,13 +70,6 @@ class User(SQLModel, table=True):
             pg.INTEGER,
             nullable=False,
             default=0
-        )
-    )
-    last_login_at: Optional[datetime] = Field(
-        default=None,
-        sa_column=Column(
-            pg.TIMESTAMP,
-            nullable=True
         )
     )
     created_at: datetime = Field(

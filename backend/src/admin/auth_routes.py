@@ -48,8 +48,7 @@ async def admin_login(
             detail="Invalid admin credentials"
         )
     
-    # Update last login
-    await admin_service.update_last_login(admin, session)
+
     
     # Create tokens with admin-specific payload
     admin_payload = {

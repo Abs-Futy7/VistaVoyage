@@ -150,6 +150,7 @@ function AdminBookingManagePage() {
                       <td className="py-4 pl-6 font-medium">{booking.id}</td>
                       <td className="py-4">{booking.packageTitle || 'N/A'}</td>
                       <td className="py-4">{booking.user?.fullName || 'N/A'}</td>
+                      {/* No city, country, or last login fields for user */}
                       <td className="py-4">
                         {booking.created_at ? 
                           new Date(booking.created_at).toLocaleDateString() : 

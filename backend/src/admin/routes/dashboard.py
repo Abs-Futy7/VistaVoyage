@@ -129,9 +129,7 @@ async def get_dashboard_stats(session: AsyncSession = Depends(get_session)):
                 "fullName": user.full_name,
                 "email": user.email,
                 "createdAt": user.created_at.isoformat() + "Z",
-                "isActive": user.is_active,
-                "city": user.city,
-                "country": user.country
+                "isActive": user.is_active
             }
             for user in recent_users_result.all()
         ]
@@ -170,11 +168,11 @@ async def get_system_stats(
     """Get comprehensive system statistics"""
     try:
         from ...models.destination import Destination
-        from ...models.trip_type import TripType
+       
         from ...models.package import Package
         from ...models.booking import Booking
         from ...models.blog import Blog
-        from ...models.offer import Offer
+     
         from ...models.promo_code import PromoCode
         from ...auth.models import User
         
@@ -196,14 +194,7 @@ async def get_system_stats(
             "active": active_destinations.first() or 0
         }
         
-        # Trip Types
-        total_trip_types = await session.exec(select(func.count(TripType.id)))
-        active_trip_types = await session.exec(select(func.count(TripType.id)).where(TripType.is_active == True))
-        stats["trip_types"] = {
-            "total": total_trip_types.first() or 0,
-            "active": active_trip_types.first() or 0
-        }
-        
+         
         # Packages
         total_packages = await session.exec(select(func.count(Package.id)))
         active_packages = await session.exec(select(func.count(Package.id)).where(Package.is_active == True))

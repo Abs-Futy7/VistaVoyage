@@ -35,8 +35,6 @@ export interface DashboardStats {
     email: string;
     createdAt: string;
     isActive: boolean;
-    city?: string;
-    country?: string;
   }>;
   recentBlogs: Array<{
     id: string;

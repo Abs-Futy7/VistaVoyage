@@ -30,9 +30,7 @@ class AdminUserService:
             search_term = f"%{search}%"
             statement = statement.where(
                 (User.full_name.ilike(search_term)) |
-                (User.email.ilike(search_term)) |
-                (User.city.ilike(search_term)) |
-                (User.country.ilike(search_term))
+                (User.email.ilike(search_term))
             )
         
         # Get total count
@@ -58,13 +56,10 @@ class AdminUserService:
                 "id": str(user.uid),
                 "fullName": user.full_name,
                 "email": user.email,
-                "city": user.city,
-                "country": user.country,
                 "phone": user.phone,
                 "isActive": user.is_active,
                 "bookingsCount": user.bookings_count,
-                "createdAt": user.created_at.isoformat() + "Z",
-                "lastLoginAt": user.last_login_at.isoformat() + "Z" if user.last_login_at else None
+                "createdAt": user.created_at.isoformat() + "Z"
             })
         
         # Calculate pagination info
@@ -106,13 +101,10 @@ class AdminUserService:
             "id": str(user.uid),
             "fullName": user.full_name,
             "email": user.email,
-            "city": user.city,
-            "country": user.country,
             "phone": user.phone,
             "isActive": user.is_active,
             "bookingsCount": user.bookings_count,
-            "createdAt": user.created_at.isoformat() + "Z",
-            "lastLoginAt": user.last_login_at.isoformat() + "Z" if user.last_login_at else None
+            "createdAt": user.created_at.isoformat() + "Z"
         }
     
     async def delete_user(self, session: AsyncSession, user_id: str) -> bool:
@@ -169,10 +161,7 @@ class AdminUserService:
         active_result = await session.exec(active_query)
         active_users = active_result.one()
         
-        # Users by country
-        country_query = select(User.country, func.count(User.uid)).group_by(User.country)
-        country_result = await session.exec(country_query)
-        users_by_country = {country: count for country, count in country_result.all() if country}
+        # Users by country removed (no country field)
         
         # Recent registrations (last 30 days)
         from datetime import datetime, timedelta

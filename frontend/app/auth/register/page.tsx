@@ -15,8 +15,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [city, setCity] = useState('');
-  const [country, setCountry] = useState('');
+  // No city and country fields as per backend model
   const [phone, setPhone] = useState('');
   const [passport, setPassport] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -38,8 +37,6 @@ export default function RegisterPage() {
         full_name: fullName,
         email,
         password,
-        city,
-        country,
         phone,
         passport
       });
@@ -166,40 +163,7 @@ export default function RegisterPage() {
                     </div>
                   </div>
                   
-                  {/* Location Information Section */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label htmlFor="city" className="text-sm font-medium">City</label>
-                      <div className="relative">
-                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                        <Input 
-                          id="city" 
-                          type="text" 
-                          placeholder="New York" 
-                          required 
-                          className="pl-10 h-11 bg-gray-100" 
-                          value={city} 
-                          onChange={e => setCity(e.target.value)} 
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label htmlFor="country" className="text-sm font-medium">Country</label>
-                      <div className="relative">
-                        <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                        <Input 
-                          id="country" 
-                          type="text" 
-                          placeholder="United States" 
-                          required 
-                          className="pl-10 h-11 bg-gray-100" 
-                          value={country} 
-                          onChange={e => setCountry(e.target.value)} 
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  {/* No Location Information Section: city/country removed as per backend model */}
                   
                   {/* Contact & Travel Information Section */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

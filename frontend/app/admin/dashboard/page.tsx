@@ -252,6 +252,7 @@ export default function AdminDashboard() {
                     <div>
                       <p className="font-medium">{user.fullName}</p>
                       <p className="text-sm text-gray-600">{user.email}</p>
+                      {/* No city or country fields for user */}
                     </div>
                     <div className="text-right">
                       <Badge variant={user.isActive ? 'default' : 'secondary'}>

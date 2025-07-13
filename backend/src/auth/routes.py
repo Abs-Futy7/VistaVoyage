@@ -67,10 +67,12 @@ async def login_user(login_data: UserLoginModel, session: AsyncSession = Depends
                 "uid": str(user.uid),
                 "email": user.email,
                 "full_name": user.full_name,
-                "city": user.city,
-                "country": user.country,
                 "phone": user.phone,
-                "passport": user.passport
+                "passport": user.passport,
+                "is_active": user.is_active,
+                "bookings_count": user.bookings_count,
+                "created_at": user.created_at.isoformat() if user.created_at else None,
+                "updated_at": user.updated_at.isoformat() if user.updated_at else None
             }
             access_token = create_access_token({"uid": str(user.uid), "email": user.email})
             refresh_token = create_access_token({"uid": str(user.uid), "email": user.email}, refresh=True, expiry=timedelta(days=REFRESH_TOKEN_EXPIRY))
@@ -169,10 +171,12 @@ async def get_user_profile(
         "uid": str(user.uid),
         "email": user.email,
         "full_name": user.full_name,
-        "city": user.city,
-        "country": user.country,
         "phone": user.phone,
         "passport": user.passport,
+        "is_active": user.is_active,
+        "bookings_count": user.bookings_count,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+        "updated_at": user.updated_at.isoformat() if user.updated_at else None
     }
 
 
@@ -196,5 +200,15 @@ async def update_user_profile(
 
     return {
         "message": "Profile updated successfully",
-        "user": updated_user
+        "user": {
+            "uid": str(updated_user.uid),
+            "email": updated_user.email,
+            "full_name": updated_user.full_name,
+            "phone": updated_user.phone,
+            "passport": updated_user.passport,
+            "is_active": updated_user.is_active,
+            "bookings_count": updated_user.bookings_count,
+            "created_at": updated_user.created_at.isoformat() if updated_user.created_at else None,
+            "updated_at": updated_user.updated_at.isoformat() if updated_user.updated_at else None
+        }
     }

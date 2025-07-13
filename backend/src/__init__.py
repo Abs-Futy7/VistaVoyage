@@ -9,7 +9,7 @@ from src.admin import admin_router
 from src.admin.auth_routes import admin_auth_router 
 from src.user import user_router
 from fastapi.middleware.cors import CORSMiddleware
-
+from src.home.routes import home_router
 
 
 @asynccontextmanager
@@ -44,3 +44,4 @@ app.include_router(auth_router,prefix = f"/api/{version}/auth",tags=["auth"])
 app.include_router(admin_auth_router,prefix = f"/api/{version}/admin/auth",tags=["admin_auth"])
 app.include_router(admin_router,prefix = f"/api/{version}/admin",tags=["admin"]) 
 app.include_router(user_router,prefix = f"/api/{version}/user",tags=["user"]) 
+app.include_router(home_router, prefix=f"/api/{version}/home", tags=["home"])

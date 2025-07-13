@@ -237,13 +237,7 @@ export default function BookingDetailsPage({ params }: BookingDetailsPageProps) 
                 </span>
                 <span className="font-medium">{booking.user?.phone || 'N/A'}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 flex items-center gap-1">
-                  <MapPin className="h-4 w-4" />
-                  Location
-                </span>
-                <span className="font-medium">{booking.user?.city && booking.user?.country ? `${booking.user.city}, ${booking.user.country}` : 'N/A'}</span>
-              </div>
+              {/* Location (city, country) removed as per backend model */}
               <div className="flex justify-between">
                 <span className="text-gray-600">Date of Birth</span>
                 <span className="font-medium">{booking.user?.dateOfBirth && booking.user.dateOfBirth !== null ? new Date(booking.user.dateOfBirth).toLocaleDateString() : 'N/A'}</span>

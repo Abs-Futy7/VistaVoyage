@@ -14,8 +14,6 @@ function ProfilePage() {
     full_name: '',
     email: '',
     phone: '',
-    city: '',
-    country: '',
     passport: ''
   });
 
@@ -26,8 +24,6 @@ function ProfilePage() {
         full_name: user.full_name || '',
         email: user.email || '',
         phone: user.phone || '',
-        city: user.city || '',
-        country: user.country || '',
         passport: user.passport || ''
       });
     }
@@ -83,12 +79,6 @@ function ProfilePage() {
       updateData.passport = formData.passport.trim();
       
       // Only include optional fields if they have values
-      if (formData.city.trim()) {
-        updateData.city = formData.city.trim();
-      }
-      if (formData.country.trim()) {
-        updateData.country = formData.country.trim();
-      }
       if (formData.phone.trim()) {
         updateData.phone = formData.phone.trim();
       }
@@ -200,28 +190,7 @@ function ProfilePage() {
                 />
                 <p className="text-xs text-gray-500 mt-1">Optional</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                  <label htmlFor="city" className="text-base">City</label>
-                  <Input 
-                    id="city" 
-                    value={formData.city} 
-                    onChange={(e) => handleInputChange('city', e.target.value)}
-                    className="mt-1 h-11 text-base bg-gray-100 border border-gray-800/20"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Optional</p>
-              </div>
-              <div>
-                  <label htmlFor="country" className="text-base">Country</label>
-                  <Input 
-                    id="country" 
-                    value={formData.country} 
-                    onChange={(e) => handleInputChange('country', e.target.value)}
-                    className="mt-1 h-11 text-base bg-gray-100 border border-gray-800/20"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Optional</p>
-              </div>
-            </div>
+            {/* Removed city and country fields as per backend model */}
             <div>
                 <label htmlFor="passport" className="text-base">Passport Number <span className="text-red-500">*</span></label>
                 <Input 

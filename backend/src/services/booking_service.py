@@ -93,8 +93,6 @@ class BookingService:
                     "fullName": user.full_name,
                     "email": user.email,
                     "phone": user.phone,
-                    "city": user.city,
-                    "country": user.country,
                     "createdAt": user.created_at.isoformat()
                 }
             }
@@ -165,8 +163,6 @@ class BookingService:
                 "fullName": user.full_name,
                 "email": user.email,
                 "phone": user.phone,
-                "city": user.city,
-                "country": user.country,
                 "dateOfBirth": None,  # User model doesn't have date_of_birth field
                 "createdAt": user.created_at.isoformat()
             }

@@ -60,15 +60,7 @@ class Admin(SQLModel, table=True):
             default="admin"
         )
     )
-    
-    permissions: Optional[List[str]] = Field(
-        default=None,
-        sa_column=Column(
-            pg.ARRAY(pg.VARCHAR),
-            nullable=True
-        )
-    )
-    
+
     is_active: bool = Field(
         default=True,
         sa_column=Column(
@@ -77,24 +69,6 @@ class Admin(SQLModel, table=True):
             default=True
         )
     )
-    
-    is_super_admin: bool = Field(
-        default=False,
-        sa_column=Column(
-            pg.BOOLEAN,
-            nullable=False,
-            default=False
-        )
-    )
-    
-    last_login_at: Optional[datetime] = Field(
-        default=None,
-        sa_column=Column(
-            pg.TIMESTAMP,
-            nullable=True
-        )
-    )
-    
     created_at: datetime = Field(
         sa_column=Column(
             pg.TIMESTAMP,
@@ -102,7 +76,6 @@ class Admin(SQLModel, table=True):
             nullable=False
         )
     )
-    
     updated_at: datetime = Field(
         sa_column=Column(
             pg.TIMESTAMP,

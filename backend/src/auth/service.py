@@ -28,18 +28,19 @@ class UserService:
         return False
     
     async def create_user(self, user_data: UserCreateModel, session: AsyncSession):
-        
         user_data_dict = user_data.model_dump()
-
- 
-
+        password = user_data_dict.pop('password')
         new_user = User(**user_data_dict)
-
-        new_user.password_hash = generate_hash_password(user_data_dict['password'])
+        new_user.password_hash = generate_hash_password(password)
+        # Set defaults for fields not in schema
+        new_user.is_active = True
+        new_user.bookings_count = 0
+        new_user.created_at = datetime.now()
+        new_user.updated_at = datetime.now()
         session.add(new_user)
         await session.commit()
-
-        return new_user 
+        await session.refresh(new_user)
+        return new_user
     
     async def get_current_user_id(self, user: User):
         
@@ -60,12 +61,10 @@ class UserService:
         
         # Update the timestamp
         user.updated_at = datetime.now()
-        
         # Save changes to database
         session.add(user)
         await session.commit()
         await session.refresh(user)
-        
         return user
 
 

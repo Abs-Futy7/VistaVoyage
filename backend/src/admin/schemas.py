@@ -24,7 +24,6 @@ class AdminModel(BaseModel):
     full_name: str
     role: str
     is_active: bool
-    last_login_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 
@@ -34,6 +33,7 @@ class AdminUpdateModel(BaseModel):
     email: Optional[EmailStr] = Field(default=None)
     full_name: Optional[str] = Field(default=None, min_length=1, max_length=255)
     role: Optional[str] = Field(default=None)
+    is_active: Optional[bool] = None
 
 
 class AdminPasswordChangeModel(BaseModel):
