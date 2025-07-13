@@ -11,6 +11,7 @@ from ...schemas.booking_schemas import (
     BookingUpdateModel, 
     BookingResponseModel, 
     BookingListResponseModel,
+    BookingStatusUpdateModel,
     PaymentRequestModel
 )
 from ...services.booking_service import booking_service
@@ -37,7 +38,19 @@ async def create_booking(
             user_id=str(current_user.uid)
         )
         
-        return BookingResponseModel.model_validate(booking)
+        # Get detailed booking information with user and package data
+        booking_details = await booking_service.get_booking_details_for_admin(
+            session=session,
+            booking_id=str(booking.id)
+        )
+        
+        if not booking_details:
+            raise HTTPException(
+                status_code=500,
+                detail="Error retrieving created booking details"
+            )
+        
+        return BookingResponseModel.model_validate(booking_details)
         
     except Exception as e:
         raise HTTPException(
@@ -154,6 +167,39 @@ async def make_payment(
 ):
     """Make a payment for a booking"""
     try:
+        print(f"Processing payment for booking: {booking_id}")
+        print(f"User ID: {current_user.uid}")
+        print(f"Payment data: {payment_data.model_dump()}")
+        
+        # First check if booking exists and get detailed info
+        booking_check = await booking_service.get_booking_by_id(session, booking_id)
+        if not booking_check:
+            raise HTTPException(
+                status_code=404,
+                detail="Booking not found"
+            )
+        
+        # Check if booking belongs to current user
+        if str(booking_check.user_id) != str(current_user.uid):
+            raise HTTPException(
+                status_code=403,
+                detail="Not authorized to make payment for this booking"
+            )
+        
+        # Check if booking status allows payment
+        if booking_check.status in ['cancelled', 'refunded']:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot make payment for {booking_check.status} booking"
+            )
+        
+        # Check if payment status allows payment
+        if booking_check.payment_status not in ['pending', 'partially_paid']:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Payment already {booking_check.payment_status}"
+            )
+        
         booking = await booking_service.make_payment(
             session=session,
             booking_id=booking_id,
@@ -163,11 +209,23 @@ async def make_payment(
         
         if not booking:
             raise HTTPException(
-                status_code=404,
-                detail="Booking not found"
+                status_code=500,
+                detail="Payment processing failed"
             )
         
-        return BookingResponseModel.model_validate(booking)
+        # Get detailed booking information with user and package data
+        booking_details = await booking_service.get_booking_details_for_admin(
+            session=session,
+            booking_id=booking_id
+        )
+        
+        if not booking_details:
+            raise HTTPException(
+                status_code=500,
+                detail="Error retrieving updated booking details"
+            )
+        
+        return BookingResponseModel.model_validate(booking_details)
         
     except HTTPException:
         raise
@@ -176,4 +234,58 @@ async def make_payment(
             status_code=500,
             detail=f"Error processing payment: {str(e)}"
         )
-    
+
+@booking_router.post("/bookings/{booking_id}/cancel")
+async def cancel_booking(
+    booking_id: str,
+    session: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user)
+):
+    """Cancel a booking"""
+    try:
+        booking = await booking_service.get_booking_by_id(session, booking_id)
+        
+        if not booking:
+            raise HTTPException(
+                status_code=404,
+                detail="Booking not found"
+            )
+        
+        # Verify booking belongs to the user
+        if str(booking.user_id) != str(current_user.uid):
+            raise HTTPException(
+                status_code=403,
+                detail="Not authorized to cancel this booking"
+            )
+        
+        # Check if booking can be cancelled
+        if booking.status not in ['pending', 'confirmed']:
+            raise HTTPException(
+                status_code=400,
+                detail="Booking cannot be cancelled"
+            )
+        
+        # Update booking status
+        status_update = BookingStatusUpdateModel(status='cancelled')
+        
+        updated_booking = await booking_service.update_booking_status(
+            session=session,
+            booking_id=booking_id,
+            status_data=status_update
+        )
+        
+        if not updated_booking:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to cancel booking"
+            )
+        
+        return {"message": "Booking cancelled successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error cancelling booking: {str(e)}"
+        )

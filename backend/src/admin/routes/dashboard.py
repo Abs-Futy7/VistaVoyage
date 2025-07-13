@@ -171,7 +171,6 @@ async def get_system_stats(
     try:
         from ...models.destination import Destination
         from ...models.trip_type import TripType
-        from ...models.activity import Activity
         from ...models.package import Package
         from ...models.booking import Booking
         from ...models.blog import Blog
@@ -203,14 +202,6 @@ async def get_system_stats(
         stats["trip_types"] = {
             "total": total_trip_types.first() or 0,
             "active": active_trip_types.first() or 0
-        }
-        
-        # Activities
-        total_activities = await session.exec(select(func.count(Activity.id)))
-        active_activities = await session.exec(select(func.count(Activity.id)).where(Activity.is_active == True))
-        stats["activities"] = {
-            "total": total_activities.first() or 0,
-            "active": active_activities.first() or 0
         }
         
         # Packages

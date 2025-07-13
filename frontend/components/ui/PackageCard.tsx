@@ -15,13 +15,12 @@ interface PackageInfo {
   imageHint?: string;
   price: number;
   rating: number;
-  tripType?: string;
 }
+
 
 interface PackageCardProps {
   packageInfo: PackageInfo;
 }
-
 function PackageCard({ packageInfo }: PackageCardProps) {
   return (
     <div className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow rounded-lg flex flex-col h-full border-1 border-gray-200 hover:scale-102 duration-300">
@@ -34,13 +33,7 @@ function PackageCard({ packageInfo }: PackageCardProps) {
           height={400}
           className="w-full h-48 object-cover"
         />
-        {packageInfo.tripType && (
-          <div className="absolute top-2 right-2 bg-yellow-500 text-gray-800 px-3 py-1 text-xs font-semibold rounded-xl shadow-xl border-1">
-            {packageInfo.tripType}
-          </div>
-        )}
       </div>
-      
       {/* Content Section */}
       <div className="p-4 flex-grow bg-gradient-to-t from-white to-blue-200">
         <h3 className="text-4xl font-[Bebas_Neue] mb-2 tracking-wide h-14 overflow-hidden text-gray-700">
@@ -61,7 +54,6 @@ function PackageCard({ packageInfo }: PackageCardProps) {
           </div>
         </div>
       </div>
-      
       {/* Footer Section */}
       <div className="p-4 flex justify-between items-center border-t">
         <div>

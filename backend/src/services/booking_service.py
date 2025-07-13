@@ -6,11 +6,8 @@ from decimal import Decimal
 import uuid
 
 from ..models.booking import Booking
-from ..models.booking_payment import BookingPayment
 from ..schemas.booking_schemas import BookingCreateModel, BookingUpdateModel, BookingResponseModel, BookingStatusUpdateModel
-from ..schemas.booking_payment_schemas import BookingPaymentCreateModel, BookingPaymentResponseModel
 from .promo_code_service import PromoCodeService
-from .booking_payment_service import booking_payment_service
 
 
 class BookingService:
@@ -249,9 +246,6 @@ class BookingService:
                 promo_code_id = validation_result.promo_code_id
                 discount_amount = validation_result.discount_amount or 0.0
                 final_amount = validation_result.final_amount or booking_data.total_amount
-                
-                # Mark promo code as used (use sync session for this specific call)
-                PromoCodeService.use_promo_code(session.sync_session, promo_code_id)
         
         # Create booking object - only basic booking info
         booking_dict = booking_data.model_dump(exclude={'promo_code', 'payment_method', 'payment_status'})
@@ -264,23 +258,10 @@ class BookingService:
         
         new_booking = Booking(**booking_dict)
         
-        # Save booking first
+        # Save booking with all payment info
         session.add(new_booking)
         await session.commit()
         await session.refresh(new_booking)
-        
-        # Create payment record in normalized table
-        payment_data = BookingPaymentCreateModel(
-            booking_id=new_booking.id,
-            amount=final_amount,
-            payment_method=getattr(booking_data, 'payment_method', 'pending'),
-            payment_status=getattr(booking_data, 'payment_status', 'pending'),
-            transaction_id=getattr(booking_data, 'transaction_id', None),
-            payment_gateway=getattr(booking_data, 'payment_gateway', None)
-        )
-        
-        # Create payment record using the payment service
-        await booking_payment_service.create_booking_payment(session, payment_data)
         
         return new_booking
     
@@ -303,10 +284,7 @@ class BookingService:
             if hasattr(booking, field):
                 setattr(booking, field, value)
         
-        # Update timestamp
-        booking.updated_at = datetime.now()
-        
-        # Save changes
+        # Save changes (updated_at will be handled by database onupdate)
         session.add(booking)
         await session.commit()
         await session.refresh(booking)
@@ -326,7 +304,7 @@ class BookingService:
             return None
         
         booking.status = status_data.status
-        booking.updated_at = datetime.now()
+        # updated_at will be handled by database onupdate
         
         session.add(booking)
         await session.commit()
@@ -371,26 +349,39 @@ class BookingService:
     ) -> Optional[Booking]:
         """Process payment for a booking"""
         
+        print(f"[make_payment] Looking for booking: {booking_id}")
         booking = await self.get_booking_by_id(session, booking_id)
         if not booking:
+            print(f"[make_payment] Booking not found: {booking_id}")
             return None
+        
+        print(f"[make_payment] Found booking. Status: {booking.status}, Payment status: {booking.payment_status}")
+        print(f"[make_payment] Booking user_id: {booking.user_id}, Provided user_id: {user_id}")
         
         # Verify booking belongs to the user
         if str(booking.user_id) != str(user_id):
+            print(f"[make_payment] User ID mismatch")
             return None
         
         # Check if payment is already made
-        if booking.payment_status != 'pending':
+        if booking.payment_status not in ['pending', 'partially_paid']:
+            print(f"[make_payment] Payment status not valid for payment: {booking.payment_status}")
+            return None
+        
+        # Check if booking is in a valid state for payment
+        if booking.status in ['cancelled', 'refunded']:
+            print(f"[make_payment] Booking status not valid for payment: {booking.status}")
             return None
         
         # Update payment details
-        payment_amount = Decimal(str(payment_data.get('amount', 0.0)))
+        payment_amount = Decimal(str(payment_data.get('payment_amount', 0.0)))
+        print(f"[make_payment] Processing payment amount: {payment_amount}")
         booking.paid_amount += payment_amount
-        booking.payment_status = 'completed' if booking.paid_amount >= booking.total_amount else 'partial'
+        booking.payment_status = 'paid' if booking.paid_amount >= booking.total_amount else 'partially_paid'
         
-        # Update timestamp
-        booking.updated_at = datetime.now()
+        print(f"[make_payment] Updated paid_amount: {booking.paid_amount}, New payment_status: {booking.payment_status}")
         
+        # updated_at will be handled by database onupdate
         session.add(booking)
         await session.commit()
         await session.refresh(booking)
@@ -420,23 +411,8 @@ class BookingService:
         if not booking:
             return None
         
-        # Get payment details
-        payment_details = await booking_payment_service.get_payments_by_booking_id(
-            session, str(booking.id)
-        )
-        
-        # Convert booking to dict and add payment info
+        # Convert booking to dict - payment info is now directly on booking
         booking_dict = BookingResponseModel.model_validate(booking).model_dump()
-        booking_dict['payments'] = payment_details
-        
-        # Add computed payment status
-        if payment_details:
-            total_paid = sum(p.amount for p in payment_details if p.payment_status == 'completed')
-            booking_dict['paid_amount'] = total_paid
-            booking_dict['payment_status'] = 'completed' if total_paid >= booking.total_amount else 'pending'
-        else:
-            booking_dict['paid_amount'] = 0.0
-            booking_dict['payment_status'] = 'pending'
         
         return booking_dict
 

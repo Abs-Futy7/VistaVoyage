@@ -19,7 +19,8 @@ async def get_bookings(
     limit: int = 10, 
     search: Optional[str] = None, 
     status: Optional[str] = None,
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    token_data: dict = Depends(admin_access_bearer)
 ):
     """Get paginated list of bookings with filtering"""
     try:
@@ -76,3 +77,30 @@ async def update_booking_status(
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(status_code=500, detail=str(e))
+
+@bookings_router.delete("/bookings/{booking_id}")
+async def delete_booking(
+    booking_id: str,
+    session: AsyncSession = Depends(get_session),
+    token_data: dict = Depends(admin_access_bearer)
+):
+    """Permanently delete a booking (Admin only)"""
+    try:
+        # Check if booking exists first
+        booking_details = await booking_service.get_booking_details_for_admin(
+            session=session,
+            booking_id=booking_id
+        )
+        if not booking_details:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        
+        # Delete the booking
+        success = await booking_service.delete_booking(session, booking_id)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to delete booking")
+        
+        return {"message": "Booking deleted successfully", "booking_id": booking_id}
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=f"Error deleting booking: {str(e)}")

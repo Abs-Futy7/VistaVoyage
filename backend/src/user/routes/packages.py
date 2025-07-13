@@ -10,8 +10,7 @@ from ...auth.dependencies import get_current_user
 from ...db.main import get_session
 from ...models.package import Package
 from ...models.destination import Destination
-from ...models.trip_type import TripType
-from ...models.offer import Offer
+## Removed TripType and Offer imports
 from ...schemas.package_schemas import (
     PackageResponseModel, 
     PackageDetailResponseModel,
@@ -28,21 +27,25 @@ async def get_public_packages(
     limit: int = Query(12, ge=1, le=50, description="Number of items per page"),
     search: Optional[str] = Query(None, description="Search term"),
     destination_id: Optional[str] = Query(None, description="Filter by destination"),
-    trip_type_id: Optional[str] = Query(None, description="Filter by trip type"),
+    # Removed trip_type_id filter
     min_price: Optional[float] = Query(None, ge=0, description="Minimum price"),
     max_price: Optional[float] = Query(None, ge=0, description="Maximum price"),
     difficulty: Optional[str] = Query(None, description="Filter by difficulty level"),
     session: AsyncSession = Depends(get_session),
     current_user=Depends(get_current_user),
 ):
-    """Get public packages with filtering (only active packages)"""
+    """Get public packages with filtering (only active packages, full info)"""
     try:
         result = await package_service.get_packages(
             session=session,
             page=page,
             limit=limit,
             search=search,
-            active_only=True  # Only show active packages to public
+            active_only=True,  # Only show active packages to public
+            destination_id=destination_id,
+            # trip_type_id removed
+            min_price=min_price,
+            max_price=max_price
         )
         return result
     except Exception as e:
@@ -55,24 +58,29 @@ async def get_featured_packages(
     session: AsyncSession = Depends(get_session),
     current_user=Depends(get_current_user)
 ):
-    """Get featured packages for homepage"""
+    """Get featured packages for homepage (full info)"""
     try:
-        # Get featured packages
-        statement = select(Package).where(
-            Package.is_featured == True,
-            Package.is_active == True
-        ).limit(limit).order_by(Package.created_at.desc())
-        
-        result = await session.exec(statement)
-        packages = result.all()
-        
-        return PackageListResponseModel(
-            packages=[PackageResponseModel.model_validate(pkg) for pkg in packages],
-            total=len(packages),
+        result = await package_service.get_packages(
+            session=session,
             page=1,
             limit=limit,
-            total_pages=1
+            active_only=True,
+            search=None,
+            destination_id=None,
+            trip_type_id=None,
+            min_price=None,
+            max_price=None
         )
+        # Filter for featured
+        featured = [pkg for pkg in result["packages"] if getattr(pkg, "is_featured", False)]
+        return {
+            **result,
+            "packages": featured,
+            "total": len(featured),
+            "page": 1,
+            "limit": limit,
+            "total_pages": 1
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -106,44 +114,12 @@ async def get_package_details(
     package_id: str,
     session: AsyncSession = Depends(get_session)
 ):
-    """Get detailed package information for public viewing"""
+    """Get detailed package information for public viewing (full info)"""
     try:
-        # Get package with relationships
-        statement = select(Package).where(
-            Package.id == package_id,
-            Package.is_active == True  # Only show active packages
-        )
-        result = await session.exec(statement)
-        package = result.first()
-        
-        if not package:
+        detail = await package_service.get_package_detail(session, package_id)
+        if not detail:
             raise HTTPException(status_code=404, detail="Package not found")
-        
-        # Get related data
-        dest_statement = select(Destination).where(Destination.id == package.destination_id)
-        dest_result = await session.exec(dest_statement)
-        destination = dest_result.first()
-        
-        trip_statement = select(TripType).where(TripType.id == package.trip_type_id)
-        trip_result = await session.exec(trip_statement)
-        trip_type = trip_result.first()
-        
-        offer = None
-        if package.offer_id:
-            offer_statement = select(Offer).where(Offer.id == package.offer_id)
-            offer_result = await session.exec(offer_statement)
-            offer = offer_result.first()
-        
-        # Build detailed response
-        package_dict = {
-            **package.model_dump(),
-            "destination_name": destination.name if destination else None,
-            "trip_type_name": trip_type.name if trip_type else None,
-            "offer_title": offer.title if offer else None
-        }
-        
-        return PackageDetailResponseModel(**package_dict)
-        
+        return detail
     except Exception as e:
         if isinstance(e, HTTPException):
             raise e

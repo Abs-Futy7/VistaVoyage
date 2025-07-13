@@ -17,8 +17,6 @@ interface PackageFormData {
   duration_days: number;
   duration_nights: number;
   destination_id: string;
-  trip_type_id: string;
-  offer_id?: string;
   is_featured: boolean;
   is_active: boolean;
   
@@ -30,7 +28,6 @@ interface PackageFormData {
   terms_conditions?: string;
   max_group_size?: number;
   min_age?: number;
-  difficulty_level?: string;
   available_from?: Date;
   available_until?: Date;
 }
@@ -38,8 +35,6 @@ interface PackageFormData {
 interface PackageFormProps {
   initialData?: Partial<PackageFormData>;
   destinations: Array<{ id: string; name: string }>;
-  tripTypes: Array<{ id: string; name: string }>;
-  offers: Array<{ id: string; title: string }>;
   onSubmit: (data: PackageFormData, featuredImage?: File, galleryImages?: File[]) => Promise<void>;
   onCancel: () => void;
   isLoading: boolean;
@@ -55,8 +50,6 @@ const difficultyLevels = [
 export const AdminPackageForm: React.FC<PackageFormProps> = ({
   initialData,
   destinations,
-  tripTypes,
-  offers,
   onSubmit,
   onCancel,
   isLoading
@@ -68,7 +61,6 @@ export const AdminPackageForm: React.FC<PackageFormProps> = ({
     duration_days: 1,
     duration_nights: 0,
     destination_id: '',
-    trip_type_id: '',
     is_featured: false,
     is_active: true,
     ...initialData
@@ -199,45 +191,6 @@ export const AdminPackageForm: React.FC<PackageFormProps> = ({
                     </SelectContent>
                   </Select>
                 </div>
-
-                <div>
-                  <Label htmlFor="trip_type">Trip Type *</Label>
-                  <Select 
-                    value={formData.trip_type_id} 
-                    onValueChange={(value) => handleInputChange('trip_type_id', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select trip type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {tripTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="offer">Offer (Optional)</Label>
-                  <Select 
-                    value={formData.offer_id || 'none'} 
-                    onValueChange={(value) => handleInputChange('offer_id', value === 'none' ? undefined : value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select offer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No Offer</SelectItem>
-                      {offers.map((offer) => (
-                        <SelectItem key={offer.id} value={offer.id}>
-                          {offer.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
 
               <div>
@@ -358,26 +311,6 @@ export const AdminPackageForm: React.FC<PackageFormProps> = ({
                     min="0"
                     placeholder="e.g., 18"
                   />
-                </div>
-
-                <div>
-                  <Label htmlFor="difficulty_level">Difficulty Level</Label>
-                  <Select 
-                    value={formData.difficulty_level || 'none'} 
-                    onValueChange={(value) => handleInputChange('difficulty_level', value === 'none' ? undefined : value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select difficulty" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Not specified</SelectItem>
-                      {difficultyLevels.map((level) => (
-                        <SelectItem key={level.value} value={level.value}>
-                          {level.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 

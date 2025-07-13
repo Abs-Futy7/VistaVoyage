@@ -5,18 +5,24 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search } from 'lucide-react';
+import { Search, Trash2 } from 'lucide-react';
 import { useAdminBookings } from '@/hooks/useAdmin';
 import { useRouter } from 'next/navigation';
 import { toast } from "sonner";
 
 function AdminBookingManagePage() {
-  const { bookings, loading, error, updateBookingStatus, search, filterByStatus, refetch } = useAdminBookings();
+  const { bookings, loading, error, updateBookingStatus, deleteBooking, search, filterByStatus, refetch } = useAdminBookings();
   const [statusFilter, setStatusFilter] = useState('');
   const router = useRouter();
 
   const handleStatusChange = async (bookingId: string, newStatus: string) => {
     await updateBookingStatus(bookingId, newStatus);
+  };
+
+  const handleDeleteBooking = async (bookingId: string) => {
+    if (window.confirm('Are you sure you want to permanently delete this booking? This action cannot be undone.')) {
+      await deleteBooking(bookingId);
+    }
   };
 
   const handleStatusFilter = (status: string) => {
@@ -194,6 +200,15 @@ function AdminBookingManagePage() {
                               Cancel
                             </Button>
                           )}
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-800"
+                            onClick={() => handleDeleteBooking(booking.id)}
+                            title="Delete booking permanently"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </td>
                     </tr>

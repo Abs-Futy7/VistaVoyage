@@ -11,16 +11,14 @@ import React, { useEffect, useState } from "react";
 import { LuListFilter } from "react-icons/lu";
 import PackageCard from "@/components/ui/PackageCard";
 import { packageService, PublicPackage, PackageSearchFilters } from "@/lib/api/services/packages";
-import { offerService, Offer } from '@/lib/api/services/offers';
-import { tripTypeService, TripType } from '@/lib/api/services/tripTypes';
 import { destinationService, Destination } from '@/lib/api/services/destinations';
 import { toast } from "sonner";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
+
 function PackageListingPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [priceRange, setPriceRange] = useState("any");
-  const [tripType, setTripType] = useState("any");
   const [packages, setPackages] = useState<PublicPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -29,68 +27,47 @@ function PackageListingPage() {
 
   useEffect(() => {
     fetchPackages();
-  }, [searchTerm, priceRange, tripType, page]);
+  }, [searchTerm, priceRange, page]);
 
-  // Helper to fetch offer, trip type, and destination for a package
-  const fetchOfferTripTypeDestination = async (pkg: PublicPackage) => {
-    let offer: Offer | undefined = undefined;
-    let tripType: TripType | undefined = undefined;
+  // Helper to fetch destination for a package
+  const fetchDestination = async (pkg: PublicPackage) => {
     let destination: Destination | undefined = undefined;
-    try {
-      if (pkg.offer_id) {
-        offer = await offerService.getOfferById(pkg.offer_id);
-      }
-    } catch {}
-    try {
-      if (pkg.trip_type_id) {
-        tripType = await tripTypeService.getTripTypeById(pkg.trip_type_id);
-      }
-    } catch {}
     try {
       if (pkg.destination_id) {
         destination = await destinationService.getDestinationById(pkg.destination_id);
       }
     } catch {}
-    return { offer, tripType, destination };
+    return { destination };
   };
 
-  // Transform package for card with offer/tripType/destination info
-  const transformPackageForCard = (pkg: PublicPackage & { offer?: Offer; tripType?: TripType; destination?: Destination }) => ({
+  // Transform package for card with destination info
+  const transformPackageForCard = (pkg: PublicPackage & { destination?: Destination }) => ({
     id: pkg.id,
     title: pkg.title,
     destination: pkg.destination
       ? `${pkg.destination.name}, ${pkg.destination.country}`
       : (pkg.destination ? `${(pkg.destination as Destination).name}, ${(pkg.destination as Destination).country}` : 'Unknown destination'),
-    price: pkg.offer ? pkg.price * (1 - (pkg.offer.discount_percentage || 0) / 100) : pkg.price,
-    originalPrice: pkg.price,
+    price: pkg.price,
     duration: `${pkg.duration_days} days`,
     imageUrl: pkg.featured_image || '/images/default-package.jpg',
     imageHint: `${pkg.title} - ${pkg.destination?.name || (pkg.destination as Destination)?.name || 'Unknown'}`,
     rating: 4.5, // TODO: Add rating system
-    reviews: 24, // TODO: Add reviews system
-    category: pkg.tripType?.name || 'Other',
-    features: pkg.highlights?.split('\n').slice(0, 3) || [],
-    isPopular: pkg.is_featured,
-    discount: pkg.offer?.discount_percentage,
-    offerName: pkg.offer?.title,
-    tripTypeDescription: pkg.tripType?.description,
   });
 
-  // Fetch packages and enrich with offer/tripType/destination
+  // Fetch packages and enrich with destination
   const fetchPackages = async () => {
     try {
       setLoading(true);
       const filters: PackageSearchFilters = {
         ...(searchTerm && { search: searchTerm }),
         ...(priceRange !== 'any' && getPriceFilter(priceRange)),
-        ...(tripType !== 'any' && { trip_type: tripType }),
       };
       const response = await packageService.getAllPackages(page, 12, filters);
-      // Fetch offer/tripType/destination for each package in parallel
+      // Fetch destination for each package in parallel
       const enrichedPackages = await Promise.all(
         response.packages.map(async (pkg) => {
-          const { offer, tripType, destination } = await fetchOfferTripTypeDestination(pkg);
-          return { ...pkg, offer, tripType, destination };
+          const { destination } = await fetchDestination(pkg);
+          return { ...pkg, destination };
         })
       );
       if (page === 1) {
@@ -135,10 +112,7 @@ function PackageListingPage() {
     setPage(1);
   };
 
-  const handleTripTypeChange = (type: string) => {
-    setTripType(type);
-    setPage(1);
-  };
+
 
   const loadMore = () => {
     if (hasMore && !loading) {
@@ -148,7 +122,7 @@ function PackageListingPage() {
 
   const handleApplyFilters = () => {
     // You could add additional logic here if needed
-    console.log("Filters applied:", { searchTerm, priceRange, tripType });
+    console.log("Filters applied:", { searchTerm, priceRange });
   };
 
   return (
@@ -192,20 +166,7 @@ function PackageListingPage() {
               </SelectContent>
             </Select>
 
-            {/* Trip Type Filter */}
-            <Select value={tripType} onValueChange={handleTripTypeChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Trip Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="any">Any Type</SelectItem>
-                <SelectItem value="adventure">Adventure</SelectItem>
-                <SelectItem value="cultural">Cultural</SelectItem>
-                <SelectItem value="beach">Beach</SelectItem>
-                <SelectItem value="city">City</SelectItem>
-                <SelectItem value="nature">Nature</SelectItem>
-              </SelectContent>
-            </Select>
+
 
             {/* Filter Button */}
             <button className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
@@ -266,7 +227,6 @@ function PackageListingPage() {
                   onClick={() => {
                     setSearchTerm("");
                     setPriceRange("any");
-                    setTripType("any");
                   }}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
                 >

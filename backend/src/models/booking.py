@@ -1,5 +1,5 @@
 from sqlmodel import SQLModel, Field, Column, Relationship
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, func
 import sqlalchemy.dialects.postgresql as pg
 import uuid
 from datetime import datetime
@@ -10,7 +10,6 @@ if TYPE_CHECKING:
     from .package import Package
     from .promo_code import PromoCode
     from ..auth.models import User
-    from .booking_payment import BookingPayment
 
 
 class BookingStatus(str, Enum):
@@ -84,13 +83,37 @@ class Booking(SQLModel, table=True):
         )
     )
     
-
+    total_amount: float = Field(
+        default=0.0,
+        sa_column=Column(
+            pg.NUMERIC(10, 2),
+            nullable=False,
+            default=0.0
+        )
+    )
     
+    paid_amount: float = Field(
+        default=0.0,
+        sa_column=Column(
+            pg.NUMERIC(10, 2),
+            nullable=False,
+            default=0.0
+        )
+    )
+    
+    discount_amount: float = Field(
+        default=0.0,
+        sa_column=Column(
+            pg.NUMERIC(10, 2),
+            nullable=False,
+            default=0.0
+        )
+    )
     
     booking_date: datetime = Field(
         sa_column=Column(
             pg.TIMESTAMP,
-            default=datetime.now,
+            default=func.now(),
             nullable=False
         )
     )
@@ -114,7 +137,7 @@ class Booking(SQLModel, table=True):
     created_at: datetime = Field(
         sa_column=Column(
             pg.TIMESTAMP,
-            default=datetime.now,
+            default=func.now(),
             nullable=False
         )
     )
@@ -122,8 +145,8 @@ class Booking(SQLModel, table=True):
     updated_at: datetime = Field(
         sa_column=Column(
             pg.TIMESTAMP,
-            default=datetime.now,
-            onupdate=datetime.now,
+            default=func.now(),
+            onupdate=func.now(),
             nullable=False
         )
     )
@@ -132,7 +155,6 @@ class Booking(SQLModel, table=True):
     package: "Package" = Relationship(back_populates="bookings")
     user: "User" = Relationship(back_populates="bookings")
     promo_code: Optional["PromoCode"] = Relationship(back_populates="bookings")
-    payment: Optional["BookingPayment"] = Relationship(back_populates="booking", cascade_delete=True)
 
     def __repr__(self):
         return f"<Booking {self.id} - User: {self.user_id}>"
@@ -140,19 +162,9 @@ class Booking(SQLModel, table=True):
     @property
     def outstanding_amount(self) -> float:
         """Calculate the outstanding amount to be paid."""
-        return self.payment.outstanding_amount if self.payment else 0.0
+        return max(0.0, self.total_amount - self.paid_amount)
 
     @property
     def is_fully_paid(self) -> bool:
         """Check if the booking is fully paid."""
-        return self.payment.is_fully_paid if self.payment else False
-
-    @property
-    def total_amount(self) -> float:
-        """Get the total amount for this booking."""
-        return self.payment.total_amount if self.payment else 0.0
-
-    @property
-    def paid_amount(self) -> float:
-        """Get the paid amount for this booking."""
-        return self.payment.paid_amount if self.payment else 0.0
+        return self.paid_amount >= self.total_amount

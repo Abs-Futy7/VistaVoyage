@@ -12,7 +12,6 @@ import {
   Bell, 
   Settings,
   MapPin,
-  Activity,
   Gift,
   UserPlus,
   Map
@@ -157,9 +156,6 @@ function AdminLayout({children}: {children: React.ReactNode}) {
     { title: "Bookings", href: "/admin/bookings", icon: BookOpen },
     { title: "Users", href: "/admin/users", icon: Users },
     { title: "Destinations", href: "/admin/destinations", icon: MapPin },
-    { title: "Trip Types", href: "/admin/trip-types", icon: Map },
-    { title: "Activities", href: "/admin/activities", icon: Activity },
-    { title: "Offers", href: "/admin/offers", icon: Gift },
     { title: "Promo Codes", href: "/admin/promo-codes", icon: Tag },
   ];
 

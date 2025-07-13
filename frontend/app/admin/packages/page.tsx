@@ -23,7 +23,7 @@ import {
   Copy,
   Check
 } from 'lucide-react';
-import { useAdminPackages, useAdminDestinations, useAdminTripTypes, useAdminOffers } from '@/hooks/useAdmin';
+import { useAdminPackages, useAdminDestinations } from '@/hooks/useAdmin';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import AdminForm, { FormField } from '@/components/ui/admin-form';
 import { AdminPackage } from '@/lib/api/services/admin';
@@ -53,12 +53,8 @@ export default function AdminPackagesPage() {
 
   // Get destinations and trip types for dropdowns
   const { destinations, loading: destinationsLoading } = useAdminDestinations();
-  const { tripTypes, loading: tripTypesLoading } = useAdminTripTypes();
-  const { offers, loading: offersLoading } = useAdminOffers();
 
   console.log('Destinations:', destinations, 'Loading:', destinationsLoading);
-  console.log('Trip Types:', tripTypes, 'Loading:', tripTypesLoading);
-  console.log('Offers:', offers, 'Loading:', offersLoading);
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -72,17 +68,7 @@ export default function AdminPackagesPage() {
     const destination = destinations.find(d => d.id === destinationId);
     return destination ? `${destination.name}, ${destination.country}` : destinationId.substring(0, 8) + '...';
   };
-
-  const getTripTypeName = (tripTypeId: string) => {
-    const tripType = tripTypes.find(t => t.id === tripTypeId);
-    return tripType ? tripType.name : tripTypeId.substring(0, 8) + '...';
-  };
-
-  const getOfferTitle = (offerId?: string) => {
-    if (!offerId) return null;
-    const offer = offers.find(o => o.id === offerId);
-    return offer ? offer.title : offerId.substring(0, 8) + '...';
-  };
+ 
 
   // Helper function to construct full image URL
   const getImageUrl = (imagePath: string | undefined) => {
@@ -107,8 +93,6 @@ export default function AdminPackagesPage() {
     duration_days: '',
     duration_nights: '',
     destination_id: '',
-    trip_type_id: '',
-    offer_id: 'none',
     is_featured: false,
     is_active: true
   });
@@ -170,30 +154,7 @@ export default function AdminPackagesPage() {
         label: `${dest.name} (${dest.city}, ${dest.country})`
       }))
     },
-    {
-      name: 'trip_type_id',
-      label: 'Trip Type',
-      type: 'select',
-      required: true,
-      placeholder: 'Select a trip type',
-      options: tripTypes.map(type => ({
-        value: type.id,
-        label: `${type.name} - ${type.category}`
-      }))
-    },
-    {
-      name: 'offer_id',
-      label: 'Offer (Optional)',
-      type: 'select',
-      placeholder: 'Select an offer (optional)',
-      options: [
-        { value: 'none', label: 'No offer' },
-        ...offers.map(offer => ({
-          value: offer.id,
-          label: offer.title
-        }))
-      ]
-    },
+     
     {
       name: 'featured_image',
       label: 'Featured Image',
@@ -230,10 +191,7 @@ export default function AdminPackagesPage() {
     e.preventDefault();
     
     // Check if reference data is loaded
-    if (destinationsLoading || tripTypesLoading || offersLoading) {
-      toast.error('Please wait for data to load');
-      return;
-    }
+    
     
     // Validate required fields
     if (!createFormData.title?.trim()) {
@@ -258,17 +216,14 @@ export default function AdminPackagesPage() {
 
     // Validate that selected IDs exist in the loaded data
     const selectedDestination = destinations.find(d => d.id === createFormData.destination_id);
-    const selectedTripType = tripTypes.find(t => t.id === createFormData.trip_type_id);
+   
     
     if (!selectedDestination) {
       toast.error('Selected destination is invalid');
       return;
     }
     
-    if (!selectedTripType) {
-      toast.error('Selected trip type is invalid');
-      return;
-    }
+    
     
     // Validate UUID format
     if (!isValidUUID(createFormData.destination_id)) {
@@ -276,23 +231,6 @@ export default function AdminPackagesPage() {
       return;
     }
     
-    if (!isValidUUID(createFormData.trip_type_id)) {
-      toast.error('Invalid trip type ID format');
-      return;
-    }
-    
-    if (createFormData.offer_id && createFormData.offer_id !== 'none') {
-      const selectedOffer = offers.find(o => o.id === createFormData.offer_id);
-      if (!selectedOffer) {
-        toast.error('Selected offer is invalid');
-        return;
-      }
-      if (!isValidUUID(createFormData.offer_id)) {
-        toast.error('Invalid offer ID format');
-        return;
-      }
-    }
-
     // Extract featured_image file from createFormData
     const featuredImageFile = createFormData.featured_image instanceof File ? createFormData.featured_image : undefined;
 
@@ -303,8 +241,6 @@ export default function AdminPackagesPage() {
       duration_days: parseInt(createFormData.duration_days) || 1,
       duration_nights: parseInt(createFormData.duration_nights) || 0,
       destination_id: createFormData.destination_id,
-      trip_type_id: createFormData.trip_type_id,
-      offer_id: createFormData.offer_id === 'none' ? null : createFormData.offer_id,
       is_featured: Boolean(createFormData.is_featured),
       is_active: Boolean(createFormData.is_active)
     };
@@ -312,7 +248,6 @@ export default function AdminPackagesPage() {
     console.log('Creating package with data:', packageData);
     console.log('Featured image file:', featuredImageFile);
     console.log('Destination exists:', selectedDestination);
-    console.log('Trip type exists:', selectedTripType);
 
     const result = await createPackage(packageData, featuredImageFile);
     if (result) {
@@ -325,8 +260,6 @@ export default function AdminPackagesPage() {
         duration_days: '',
         duration_nights: '',
         destination_id: '',
-        trip_type_id: '',
-        offer_id: 'none',
         is_featured: false,
         is_active: true
       });
@@ -347,8 +280,6 @@ export default function AdminPackagesPage() {
       ...(editFormData.duration_days && { duration_days: parseInt(editFormData.duration_days) }),
       ...(editFormData.duration_nights && { duration_nights: parseInt(editFormData.duration_nights) }),
       ...(editFormData.destination_id && { destination_id: editFormData.destination_id }),
-      ...(editFormData.trip_type_id && { trip_type_id: editFormData.trip_type_id }),
-      ...(editFormData.offer_id !== undefined && { offer_id: editFormData.offer_id === 'none' ? null : editFormData.offer_id }),
       ...(editFormData.is_featured !== undefined && { is_featured: Boolean(editFormData.is_featured) }),
       ...(editFormData.is_active !== undefined && { is_active: Boolean(editFormData.is_active) })
     };
@@ -390,8 +321,6 @@ export default function AdminPackagesPage() {
       duration_days: pkg.duration_days.toString(),
       duration_nights: pkg.duration_nights.toString(),
       destination_id: pkg.destination_id,
-      trip_type_id: pkg.trip_type_id,
-      offer_id: pkg.offer_id || 'none',
       is_featured: pkg.is_featured,
       is_active: pkg.is_active
     });
@@ -415,7 +344,7 @@ export default function AdminPackagesPage() {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'USD',
     }).format(price);
   };
 
@@ -631,10 +560,7 @@ export default function AdminPackagesPage() {
 
                   {/* Package Details */}
                   <div className="space-y-1">
-                    <div className="text-xs text-gray-500">
-                      <div>Type: {getTripTypeName(pkg.trip_type_id)}</div>
-                      {pkg.offer_id && <div>Offer: {getOfferTitle(pkg.offer_id)}</div>}
-                    </div>
+                     
                   </div>
 
                   {/* Date */}

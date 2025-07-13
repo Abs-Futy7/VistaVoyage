@@ -16,8 +16,7 @@ class PromoCodeCreateModel(BaseModel):
     usage_limit: Optional[int] = Field(None, ge=1)
     is_active: bool = True
     
-    # Optional offer relationship for backward compatibility
-    offer_id: Optional[uuid.UUID] = None
+    # Removed offer_id field
     
     @field_validator('expiry_date')
     @classmethod
@@ -43,7 +42,7 @@ class PromoCodeUpdateModel(BaseModel):
     expiry_date: Optional[date] = None
     usage_limit: Optional[int] = Field(None, ge=1)
     is_active: Optional[bool] = None
-    offer_id: Optional[uuid.UUID] = None
+    # Removed offer_id field
     
     @field_validator('code')
     @classmethod
@@ -69,8 +68,7 @@ class PromoCodeResponseModel(BaseModel):
     created_at: datetime
     updated_at: datetime
     
-    # Legacy fields for backward compatibility
-    offer_id: Optional[uuid.UUID] = None
+    # Removed offer_id field
     max_usage: Optional[int] = None
     # Computed fields
     remaining_uses: Optional[int] = None
@@ -104,5 +102,5 @@ class PromoCodeValidationResponseModel(BaseModel):
     final_amount: Optional[float] = None
     message: str
     promo_code_id: Optional[uuid.UUID] = None
-    offer_title: Optional[str] = None
+    # Removed offer_title field
     remaining_uses: Optional[int] = None

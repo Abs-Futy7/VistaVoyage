@@ -17,9 +17,6 @@ export interface PromoCode {
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
-  offer_id?: string;
-  max_usage?: number | null;
-  current_usage?: number;
   remaining_uses?: number | null;
   is_valid?: boolean;
   is_expired?: boolean;
@@ -43,6 +40,67 @@ export interface ValidatePromoCodeResponse {
 }
 
 export const promoCodeService = {
+  // Admin endpoints
+  async createPromoCode(data: Partial<PromoCode>): Promise<PromoCode> {
+    try {
+      // Remove unsupported fields before sending to backend
+      const cleanData = { ...data };
+      delete (cleanData as any).offer_id;
+      delete (cleanData as any).max_usage;
+      delete (cleanData as any).current_usage;
+      const response = await apiClient.post<PromoCode>(API_CONFIG.ENDPOINTS.ADMIN.PROMO_CODE_CREATE, cleanData);
+      if (response.success && response.data) {
+        return response.data;
+      }
+      throw new Error('Failed to create promo code');
+    } catch (error: any) {
+      console.error('Create promo code error:', error);
+      throw error;
+    }
+  },
+
+  async updatePromoCode(id: string, data: Partial<PromoCode>): Promise<PromoCode> {
+    try {
+      // Remove unsupported fields before sending to backend
+      const cleanData = { ...data };
+      delete (cleanData as any).offer_id;
+      delete (cleanData as any).max_usage;
+      delete (cleanData as any).current_usage;
+      const response = await apiClient.put<PromoCode>(API_CONFIG.ENDPOINTS.ADMIN.PROMO_CODE_UPDATE(id), cleanData);
+      if (response.success && response.data) {
+        return response.data;
+      }
+      throw new Error('Failed to update promo code');
+    } catch (error: any) {
+      console.error('Update promo code error:', error);
+      throw error;
+    }
+  },
+
+  async deletePromoCode(id: string): Promise<void> {
+    try {
+      const response = await apiClient.delete(API_CONFIG.ENDPOINTS.ADMIN.PROMO_CODE_DELETE(id));
+      if (!response.success) {
+        throw new Error('Failed to delete promo code');
+      }
+    } catch (error: any) {
+      console.error('Delete promo code error:', error);
+      throw error;
+    }
+  },
+
+  async togglePromoCodeStatus(id: string): Promise<PromoCode> {
+    try {
+      const response = await apiClient.patch<PromoCode>(API_CONFIG.ENDPOINTS.ADMIN.PROMO_CODE_TOGGLE_ACTIVE(id), {});
+      if (response.success && response.data) {
+        return response.data;
+      }
+      throw new Error('Failed to toggle promo code status');
+    } catch (error: any) {
+      console.error('Toggle promo code status error:', error);
+      throw error;
+    }
+  },
   async getPromoCodes(): Promise<PromoCodeListResponse> {
     try {
       const response = await apiClient.get<PromoCodeListResponse>(API_CONFIG.ENDPOINTS.PROMO_CODES.BASE);

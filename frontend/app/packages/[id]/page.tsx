@@ -7,8 +7,6 @@ import Link from 'next/link';
 import React, { useCallback, useEffect, useState } from 'react';
 import { BsArrowRight } from 'react-icons/bs';
 import { packageService, PublicPackage } from '@/lib/api/services/packages';
-import { offerService, Offer } from '@/lib/api/services/offers';
-import { tripTypeService, TripType } from '@/lib/api/services/tripTypes';
 // TODO: Update the import path below to the correct location of your destinations service file.
 // Example correction if the file is actually named 'destination' (singular):
 // import { destinationService, Destination } from '@/lib/api/services/destination';
@@ -25,9 +23,7 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
   const [destination, setDestination] = useState<Destination | null>(null);
   const [destinationLoading, setDestinationLoading] = useState(false);
   const [showDestinationDetails, setShowDestinationDetails] = useState(false);
-  const [offer, setOffer] = useState<Offer | null>(null);
   const [offerLoading, setOfferLoading] = useState(false);
-  const [tripType, setTripType] = useState<TripType | null>(null);
   const [tripTypeLoading, setTripTypeLoading] = useState(false);
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
   const resolvedParams = React.use(params);
@@ -48,30 +44,6 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
     }
   }, []);
 
-  const fetchOffer = useCallback(async (offerId: string) => {
-    setOfferLoading(true);
-    try {
-      const offerData = await offerService.getOfferById(offerId);
-      setOffer(offerData);
-    } catch (e) {
-      setOffer(null);
-    } finally {
-      setOfferLoading(false);
-    }
-  }, []);
-
-  const fetchTripType = useCallback(async (tripTypeId: string) => {
-    setTripTypeLoading(true);
-    try {
-      const tripTypeData = await tripTypeService.getTripTypeById(tripTypeId);
-      setTripType(tripTypeData);
-    } catch (e) {
-      setTripType(null);
-    } finally {
-      setTripTypeLoading(false);
-    }
-  }, []);
-
   const fetchPackageDetails = async () => {
     try {
       setLoading(true);
@@ -81,16 +53,6 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
         fetchDestination(data.destination_id);
       } else {
         setDestination(null);
-      }
-      if (data.offer_id) {
-        fetchOffer(data.offer_id);
-      } else {
-        setOffer(null);
-      }
-      if (data.trip_type_id) {
-        fetchTripType(data.trip_type_id);
-      } else {
-        setTripType(null);
       }
     } catch (error: any) {
       console.error('Failed to fetch package details:', error);
@@ -157,9 +119,6 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
 
   const gallery = parseGallery(packageDetails.image_gallery);
   // Calculate effective price using offer from API
-  const effectivePrice = offer
-    ? packageDetails.price * (1 - (offer.discount_percentage || 0) / 100)
-    : packageDetails.price;
 
   return (
     <div className="bg-white min-h-screen pb-16">
@@ -182,11 +141,6 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
             <div className="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
               <Star className="h-3 w-3" />
               Featured
-            </div>
-          )}
-          {offer && (
-            <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-              {offer.discount_percentage}% OFF
             </div>
           )}
         </div>
@@ -396,13 +350,8 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
                 <div className="space-y-6">
                   <div className="text-center">
                     <div className="flex items-center justify-center gap-2">
-                      {offer && (
-                        <span className="text-2xl text-gray-400 line-through">
-                          ${packageDetails.price}
-                        </span>
-                      )}
                       <span className="text-4xl font-bold text-blue-600">
-                        ${effectivePrice.toFixed(0)}
+                        ${packageDetails.price}
                       </span>
                     </div>
                     <p className="text-gray-600 mt-1">per person</p>
@@ -413,24 +362,6 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
                       <span className="text-gray-600">Duration</span>
                       <span className="font-medium">{packageDetails.duration_days} days</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Trip Type</span>
-                      <span className="font-medium">
-                        {tripTypeLoading ? 'Loading...' : (tripType ? tripType.name : 'Other')}
-                      </span>
-                    </div>
-                    {tripType && tripType.description && (
-                      <div className="text-xs text-gray-500 mb-2">{tripType.description}</div>
-                    )}
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Offer</span>
-                      <span className="font-medium">
-                        {offerLoading ? 'Loading...' : (offer ? `${offer.title} (${offer.discount_percentage || 0}% OFF)` : 'No Offer')}
-                      </span>
-                    </div>
-                    {offer && offer.description && (
-                      <div className="text-xs text-gray-500 mb-2">{offer.description}</div>
-                    )}
                     {/* {packageDetails.difficulty_level && (
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Difficulty</span>
@@ -457,10 +388,7 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
                       <Heart className="h-4 w-4" />
                       Add to Wishlist
                     </button>
-                    <button className="w-full border border-gray-300 hover:border-gray-400 text-gray-700 py-3 px-6 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
-                      <Share2 className="h-4 w-4" />
-                      Share Package
-                    </button>
+                    {/* Share Package button removed */}
                   </div>
                 </div>
               </CardContent>
@@ -549,7 +477,7 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
         onClose={() => setIsBookingDialogOpen(false)}
         packageId={resolvedParams.id}
         packageTitle={packageDetails.title}
-        packagePrice={effectivePrice}
+        packagePrice={packageDetails.price}
         onBookingSuccess={(bookingId) => {
           toast.success('Booking created successfully!');
           setIsBookingDialogOpen(false);

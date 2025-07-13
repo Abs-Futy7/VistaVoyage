@@ -10,10 +10,8 @@ from .routes.users import users_router
 from .routes.blogs import blog_router
 from .routes.packages import packages_router
 from .routes.bookings import bookings_router
-from .routes.trip_types import trip_types_router
 from .routes.destinations import destinations_router
-from .routes.offers import offers_router
-from .routes.activities import activities_router
+ 
 
 # Try to import promo_codes_router with error handling
 try:
@@ -38,10 +36,7 @@ admin_router.include_router(users_router, tags=["Users"])
 admin_router.include_router(blog_router, tags=["Blogs"])  
 admin_router.include_router(packages_router, tags=["Packages"])
 admin_router.include_router(bookings_router, tags=["Bookings"])
-admin_router.include_router(trip_types_router, tags=["Trip Types"])
 admin_router.include_router(destinations_router, tags=["Destinations"])
-admin_router.include_router(offers_router, tags=["Offers"])
-admin_router.include_router(activities_router, tags=["Activities"])
 
 # Include promo codes router only if available
 if promo_codes_available and promo_codes_router:

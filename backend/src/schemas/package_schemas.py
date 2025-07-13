@@ -32,8 +32,7 @@ class PackageCreateModel(BaseModel):
     description: str = Field(min_length=1)
     price: float = Field(gt=0)
     destination_id: uuid.UUID
-    trip_type_id: uuid.UUID
-    offer_id: Optional[uuid.UUID] = None
+    # Removed trip_type_id and offer_id
     featured_image: Optional[str] = None
     is_featured: bool = False
     is_active: bool = True
@@ -60,8 +59,7 @@ class PackageUpdateModel(BaseModel):
     description: Optional[str] = Field(None, min_length=1)
     price: Optional[float] = Field(None, gt=0)
     destination_id: Optional[uuid.UUID] = None
-    trip_type_id: Optional[uuid.UUID] = None
-    offer_id: Optional[uuid.UUID] = None
+    # Removed trip_type_id and offer_id
     featured_image: Optional[str] = None
     is_featured: Optional[bool] = None
     is_active: Optional[bool] = None
@@ -91,8 +89,7 @@ class PackageResponseModel(BaseModel):
     duration_days: Optional[int] = None
     duration_nights: Optional[int] = None
     destination_id: uuid.UUID
-    trip_type_id: uuid.UUID
-    offer_id: Optional[uuid.UUID] = None
+    # Removed trip_type_id and offer_id
     featured_image: Optional[str] = None
     is_featured: bool
     is_active: bool
@@ -106,8 +103,7 @@ class PackageDetailResponseModel(BaseModel):
     description: str
     price: float
     destination_id: uuid.UUID
-    trip_type_id: uuid.UUID
-    offer_id: Optional[uuid.UUID] = None
+    # Removed trip_type_id and offer_id
     featured_image: Optional[str] = None
     is_featured: bool
     is_active: bool

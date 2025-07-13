@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from fastapi.responses import Response
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from sqlmodel.ext.asyncio.session import AsyncSession
 import uuid as uuid_module
 from datetime import datetime
@@ -94,8 +94,6 @@ async def create_package(
     duration_days: int = Form(...),
     duration_nights: int = Form(...),
     destination_id: str = Form(...),
-    trip_type_id: str = Form(...),
-    offer_id: Optional[str] = Form(None),
     featured_image: Optional[UploadFile] = File(None),
     gallery_images: Optional[List[UploadFile]] = File(None),
     is_featured: bool = Form(False),
@@ -204,8 +202,6 @@ async def create_package(
             duration_days=duration_days,
             duration_nights=duration_nights,
             destination_id=uuid_module.UUID(destination_id),
-            trip_type_id=uuid_module.UUID(trip_type_id),
-            offer_id=uuid_module.UUID(offer_id) if offer_id else None,
             featured_image=featured_image_url,
             is_featured=is_featured,
             is_active=is_active,
@@ -240,14 +236,10 @@ async def update_package(
     duration_days: Optional[int] = Form(None),
     duration_nights: Optional[int] = Form(None),
     destination_id: Optional[str] = Form(None),
-    trip_type_id: Optional[str] = Form(None),
-    offer_id: Optional[str] = Form(None),
     featured_image: Optional[UploadFile] = File(None),
     gallery_images: Optional[List[UploadFile]] = File(None),
     is_featured: Optional[bool] = Form(None),
     is_active: Optional[bool] = Form(None),
-    
-    # Detailed content fields
     highlights: Optional[str] = Form(None),
     itinerary: Optional[str] = Form(None),
     inclusions: Optional[str] = Form(None),
@@ -256,7 +248,6 @@ async def update_package(
     max_group_size: Optional[int] = Form(None),
     available_from: Optional[str] = Form(None),
     available_until: Optional[str] = Form(None),
-    
     session: AsyncSession = Depends(get_session),
     token_data: dict = Depends(admin_access_bearer)
 ):
@@ -326,10 +317,7 @@ async def update_package(
             update_data.duration_nights = duration_nights
         if destination_id is not None:
             update_data.destination_id = uuid_module.UUID(destination_id)
-        if trip_type_id is not None:
-            update_data.trip_type_id = uuid_module.UUID(trip_type_id)
-        if offer_id is not None:
-            update_data.offer_id = uuid_module.UUID(offer_id) if offer_id else None
+        # trip_type_id and offer_id removed
         if featured_image is not None:  # This covers both file upload and clearing the image
             update_data.featured_image = featured_image_url
         if is_featured is not None:

@@ -31,15 +31,7 @@ class PromoCode(SQLModel, table=True):
         )
     )
     
-    # Optional offer relationship (for backward compatibility)
-    offer_id: Optional[uuid.UUID] = Field(
-        default=None,
-        sa_column=Column(
-            pg.UUID(as_uuid=True),
-            ForeignKey("offers.id"),
-            nullable=True
-        )
-    )
+    # Removed offer_id field and offer relationship
     
     # Standalone promo code fields
     description: Optional[str] = Field(
@@ -144,8 +136,7 @@ class PromoCode(SQLModel, table=True):
         )
     )
     
-    # Relationships
-    offer: Optional["Offer"] = Relationship(back_populates="promo_codes")
+    # Removed offer relationship
     bookings: list["Booking"] = Relationship(back_populates="promo_code")
 
     def __repr__(self):

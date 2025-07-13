@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -21,36 +21,127 @@ import {
   Calendar,
   Percent
 } from 'lucide-react';
-import { useAdminPromoCodes, useAdminOffers } from '@/hooks/useAdmin';
-import AdminForm, { FormField } from '@/components/ui/admin-form';
 import { AdminPromoCode } from '@/lib/api/services/admin';
+import { promoCodeService } from '@/lib/api/services/promocode';
+import AdminForm, { FormField } from '@/components/ui/admin-form';
+
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
+
 export default function AdminPromoCodesPage() {
-  const {
-    promoCodes,
-    loading,
-    error,
-    pagination,
-    fetchPromoCodes,
-    togglePromoCodeStatus,
-    deletePromoCode,
-    createPromoCode,
-    updatePromoCode,
-    search,
-    searchTerm,
-  } = useAdminPromoCodes();
+  const [promoCodes, setPromoCodes] = useState<AdminPromoCode[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 12,
+    total: 0,
+    totalPages: 1
+  });
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Get offers for dropdown
-  const { offers, loading: offersLoading } = useAdminOffers();
+  // Fetch promo codes (list)
+  const fetchPromoCodes = async () => {
+    try {
+      setLoading(true);
+      const response = await promoCodeService.getPromoCodes();
+      setPromoCodes(
+        (response.promo_codes || []).map((promo: any) => ({
+          ...promo,
+          description: promo.description ?? '',
+          minimum_amount: promo.minimum_amount ?? undefined,
+          maximum_discount: promo.maximum_discount ?? undefined,
+          usage_limit: promo.usage_limit ?? undefined,
+          start_date: promo.start_date ?? '',
+          used_count: promo.used_count ?? 0,
+          created_at: promo.created_at ?? '',
+          updated_at: promo.updated_at ?? '',
+          is_active: promo.is_active ?? true,
+        }))
+      );
+      setPagination((prev) => ({
+        ...prev,
+        total: response.total_count || (response.promo_codes ? response.promo_codes.length : 0),
+        totalPages: 1 // No pagination support in promoCodeService
+      }));
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch promo codes');
+      toast.error('Failed to load promo codes');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  console.log('Offers:', offers, 'Loading:', offersLoading);
+  // CRUD functions (single set, using promoCodeService only)
+  const createPromoCode = async (promoCodeData: any) => {
+    try {
+      setLoading(true);
+      await promoCodeService.createPromoCode(promoCodeData);
+      toast.success('Promo code created successfully');
+      await fetchPromoCodes();
+      return true;
+    } catch (err: any) {
+      toast.error('Failed to create promo code');
+    }
+  };
 
-  // Add debug logging for offers
-  if (offers.length === 0 && !offersLoading) {
-    console.warn('No offers loaded - this may affect promo code creation');
-  }
+  // updatePromoCode should be a top-level function, not nested
+  const updatePromoCode = async (id: string, promoCodeData: any) => {
+    try {
+      setLoading(true);
+      await promoCodeService.updatePromoCode(id, promoCodeData);
+      toast.success('Promo code updated successfully');
+      await fetchPromoCodes();
+      return true;
+    } catch (err: any) {
+      toast.error('Failed to update promo code');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const togglePromoCodeStatus = async (id: string) => {
+    try {
+      setLoading(true);
+      await promoCodeService.togglePromoCodeStatus(id);
+      toast.success('Promo code status updated');
+      await fetchPromoCodes();
+    } catch (err: any) {
+      toast.error('Failed to update status');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deletePromoCode = async (id: string) => {
+    try {
+      setLoading(true);
+      await promoCodeService.deletePromoCode(id);
+      toast.success('Promo code deleted');
+      await fetchPromoCodes();
+    } catch (err: any) {
+      toast.error('Failed to delete promo code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+
+  useEffect(() => {
+    fetchPromoCodes();
+    // eslint-disable-next-line
+  }, []);
+
+  const search = (term: string) => {
+    setSearchTerm(term);
+    fetchPromoCodes();
+  };
+
+
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -69,8 +160,7 @@ export default function AdminPromoCodesPage() {
     start_date: new Date().toISOString().split('T')[0], // Today's date
     expiry_date: '',
     usage_limit: '',
-    is_active: true,
-    offer_id: 'none'
+    is_active: true
   });
 
   const [editFormData, setEditFormData] = useState<Record<string, any>>({});
@@ -150,20 +240,7 @@ export default function AdminPromoCodesPage() {
       min: 1,
       step: 1
     },
-    {
-      name: 'offer_id',
-      label: 'Linked Offer (Optional)',
-      type: 'select',
-      required: false,
-      placeholder: 'Link to a specific offer (optional)',
-      options: [
-        { value: 'none', label: 'No linked offer' },
-        ...offers.map(offer => ({
-          value: offer.id,
-          label: offer.title
-        }))
-      ]
-    },
+    // Removed Linked Offer and unsupported fields
     {
       name: 'is_active',
       label: 'Active',
@@ -184,11 +261,7 @@ export default function AdminPromoCodesPage() {
     setEditFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Helper function to get offer title by ID
-  const getOfferTitle = (offerId: string) => {
-    const offer = offers.find(o => o.id === offerId);
-    return offer ? offer.title : 'Unknown Offer';
-  };
+  // Removed getOfferTitle helper
 
   const validateUUID = (uuid: string) => {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -233,11 +306,7 @@ export default function AdminPromoCodesPage() {
       return;
     }
     
-    // Validate offer_id if provided
-    if (createFormData.offer_id && createFormData.offer_id !== 'none' && !validateUUID(createFormData.offer_id)) {
-      toast.error('Invalid offer ID format');
-      return;
-    }
+    // Removed offer_id validation
     
     const promoCodeData = {
       code: createFormData.code.trim().toUpperCase(),
@@ -250,7 +319,7 @@ export default function AdminPromoCodesPage() {
       expiry_date: createFormData.expiry_date,
       usage_limit: createFormData.usage_limit ? parseInt(createFormData.usage_limit) : null,
       is_active: Boolean(createFormData.is_active),
-      offer_id: createFormData.offer_id === 'none' ? null : createFormData.offer_id
+      // offer_id removed
     };
 
     console.log('Creating promo code with data:', promoCodeData);
@@ -269,7 +338,7 @@ export default function AdminPromoCodesPage() {
         expiry_date: '',
         usage_limit: '',
         is_active: true,
-        offer_id: 'none'
+        // offer_id removed
       });
     }
   };
@@ -289,11 +358,7 @@ export default function AdminPromoCodesPage() {
       }
     }
     
-    // Validate offer_id if it's being updated
-    if (editFormData.offer_id && editFormData.offer_id !== 'none' && !validateUUID(editFormData.offer_id)) {
-      toast.error('Invalid offer ID format');
-      return;
-    }
+    // Removed offer_id validation
     
     const promoCodeData: any = {};
     
@@ -306,7 +371,7 @@ export default function AdminPromoCodesPage() {
     if (editFormData.start_date) promoCodeData.start_date = editFormData.start_date;
     if (editFormData.expiry_date) promoCodeData.expiry_date = editFormData.expiry_date;
     if (editFormData.usage_limit !== undefined) promoCodeData.usage_limit = editFormData.usage_limit ? parseInt(editFormData.usage_limit) : null;
-    if (editFormData.offer_id !== undefined) promoCodeData.offer_id = editFormData.offer_id === 'none' ? null : editFormData.offer_id;
+    // offer_id removed
     if (editFormData.is_active !== undefined) promoCodeData.is_active = Boolean(editFormData.is_active);
 
     console.log('Updating promo code with data:', promoCodeData);
@@ -347,8 +412,7 @@ export default function AdminPromoCodesPage() {
       start_date: promoCode.start_date,
       expiry_date: promoCode.expiry_date,
       usage_limit: promoCode.usage_limit?.toString() || '',
-      is_active: promoCode.is_active,
-      offer_id: promoCode.offer_id || 'none'
+      is_active: promoCode.is_active
     });
     setIsEditDialogOpen(true);
   };
@@ -476,7 +540,7 @@ export default function AdminPromoCodesPage() {
             </p>
           </div>
         ) : (
-          promoCodes.map((promoCode) => (
+          promoCodes.map((promoCode: AdminPromoCode) => (
             <Card key={promoCode.id} className="overflow-hidden hover:shadow-lg transition-shadow">
               {/* Header */}
               <div className="h-24 bg-gradient-to-br from-purple-50 to-pink-50 relative">
@@ -550,12 +614,7 @@ export default function AdminPromoCodesPage() {
                       <Users className="h-3 w-3 mr-2" />
                       <span>Usage: {promoCode.used_count || 0}/{promoCode.usage_limit || 'unlimited'}</span>
                     </div>
-                    {promoCode.offer_id && (
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Calendar className="h-3 w-3 mr-2" />
-                        <span>Linked to: {getOfferTitle(promoCode.offer_id)}</span>
-                      </div>
-                    )}
+                    {/* Linked offer display removed */}
                   </div>
 
                   {/* Date */}
@@ -629,20 +688,9 @@ export default function AdminPromoCodesPage() {
                 Page {pagination.page} of {pagination.totalPages}
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => fetchPromoCodes(pagination.page - 1)}
-                  disabled={pagination.page === 1 || loading}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => fetchPromoCodes(pagination.page + 1)}
-                  disabled={pagination.page === pagination.totalPages || loading}
-                >
-                  Next
-                </Button>
+                {/* Pagination is not supported, so just show disabled buttons */}
+                <Button variant="outline" disabled>Previous</Button>
+                <Button variant="outline" disabled>Next</Button>
               </div>
             </div>
           </CardContent>

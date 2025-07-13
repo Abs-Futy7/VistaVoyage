@@ -20,32 +20,16 @@ from .booking_schemas import (
     BookingStatus, PaymentStatus, PromoValidationRequest, PromoValidationResponse,
     PaymentRequestModel
 )
-from .booking_payment_schemas import (
-    BookingPaymentCreateModel, BookingPaymentUpdateModel, BookingPaymentResponseModel,
-    PaymentSummaryModel
-)
 from .destination_schemas import (
     DestinationCreateModel, DestinationUpdateModel, 
     DestinationResponseModel, DestinationListResponseModel
-)
-from .activity_schemas import (
-    ActivityCreateModel, ActivityUpdateModel, 
-    ActivityResponseModel, ActivityListResponseModel,
-    ActivityDifficultyEnum, ActivityCategoryEnum
-)
-from .offer_schemas import (
-    OfferCreateModel, OfferUpdateModel, 
-    OfferResponseModel, OfferListResponseModel
 )
 from .promo_code_schemas import (
     PromoCodeCreateModel, PromoCodeUpdateModel, 
     PromoCodeResponseModel, PromoCodeListResponseModel,
     PromoCodeValidationModel, PromoCodeValidationResponseModel
 )
-from .trip_type_schemas import (
-    TripTypeCreateModel, TripTypeUpdateModel, 
-    TripTypeResponseModel, TripTypeListResponseModel
-)
+ 
 
 __all__ = [
     # Blog schemas
@@ -80,14 +64,6 @@ __all__ = [
     "DestinationUpdateModel",
     "DestinationResponseModel",
     "DestinationListResponseModel",
-    
-    # Activity schemas
-    "ActivityCreateModel",
-    "ActivityUpdateModel",
-    "ActivityResponseModel",
-    "ActivityListResponseModel",
-    "ActivityDifficultyEnum",
-    "ActivityCategoryEnum",
     
     # Offer schemas
     "OfferCreateModel",

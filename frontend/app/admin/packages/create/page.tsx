@@ -2,7 +2,8 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminPackageForm } from '@/components/admin/AdminPackageFormNew';
-import { useAdminDestinations, useAdminTripTypes, useAdminOffers } from '@/hooks/useAdmin';
+
+import { useAdminDestinations } from '@/hooks/useAdmin';
 import { adminService } from '@/lib/api/services/admin';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,77 +13,51 @@ import { Button } from '@/components/ui/button';
 export default function CreatePackagePage() {
   const router = useRouter();
   const { destinations, loading: destinationsLoading } = useAdminDestinations();
-  const { tripTypes, loading: tripTypesLoading } = useAdminTripTypes();
-  const { offers, loading: offersLoading } = useAdminOffers();
 
   const handleSubmit = async (data: any, featuredImage?: File, galleryImages?: File[]) => {
     try {
       const formData = new FormData();
-      
-      // Add package data
+      // Add package data, removing all logic for offer_id and trip_type_id
       Object.keys(data).forEach(key => {
         if (data[key] !== undefined && data[key] !== null) {
-          // Handle UUID fields specifically
-          if (key === 'destination_id' || key === 'trip_type_id' || key === 'offer_id') {
-            // Only add if it's a valid UUID string, skip empty strings
+          if (key === 'destination_id') {
             if (data[key] && typeof data[key] === 'string' && data[key].trim() !== '') {
               formData.append(key, data[key]);
             }
-          } 
-          // Handle date fields
-          else if (key === 'available_from' || key === 'available_until') {
+          } else if (key === 'available_from' || key === 'available_until') {
             if (data[key]) {
-              // Format as YYYY-MM-DD to avoid timezone issues
               const dateObj = new Date(data[key]);
               const formattedDate = dateObj.toISOString().split('T')[0];
               formData.append(key, formattedDate);
             }
-          } 
-          // Handle boolean fields
-          else if (typeof data[key] === 'boolean') {
+          } else if (typeof data[key] === 'boolean') {
             formData.append(key, data[key].toString());
-          }
-          // Handle all other fields
-          else {
+          } else if (key !== 'offer_id' && key !== 'trip_type_id') {
             formData.append(key, data[key].toString());
           }
         }
       });
 
-      // Add featured image
       if (featuredImage) {
         formData.append('featured_image', featuredImage);
       }
-
-      // Add gallery images
       if (galleryImages && galleryImages.length > 0) {
         galleryImages.forEach((image) => {
           formData.append('gallery_images', image);
         });
       }
 
-      console.log('Form data being sent:');
-      for (const [key, value] of formData.entries()) {
-        console.log(`${key}: ${value instanceof File ? value.name : value}`);
-      }
-
       await adminService.createPackage(formData);
       toast.success('Package created successfully!');
       router.push('/admin/packages');
     } catch (error: any) {
-      console.error('Failed to create package:', error);
-      console.error('Error response:', error.response);
-      console.error('Error details:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      console.error('Full error object:', error);
-      
       toast.error('Failed to create package', {
         description: error.message || error.response?.data?.message || 'Please try again'
       });
     }
   };
 
-  const isLoading = destinationsLoading || tripTypesLoading || offersLoading;
+  const isLoading = destinationsLoading;
 
   if (isLoading) {
     return (
@@ -121,8 +96,6 @@ export default function CreatePackagePage() {
         <CardContent>
           <AdminPackageForm
             destinations={destinations}
-            tripTypes={tripTypes}
-            offers={offers}
             onSubmit={handleSubmit}
             onCancel={() => router.push('/admin/packages')}
             isLoading={false}

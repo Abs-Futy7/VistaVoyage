@@ -13,8 +13,7 @@ class ImageManager:
     BUCKET_MAPPING = {
         'blog': 'blogs-images',
         'package': 'package-images', 
-        'destination': 'destination-images',
-        'activity': 'activity-images'
+        'destination': 'destination-images'
     }
     
     @classmethod
@@ -24,7 +23,7 @@ class ImageManager:
         
         Args:
             file: The uploaded file
-            entity_type: Type of entity (blog, package, destination, activity)
+            entity_type: Type of entity (blog, package, destination)
             
         Returns:
             Public URL of the uploaded image
@@ -40,8 +39,6 @@ class ImageManager:
             return await supabase_service.upload_package_image(file)
         elif entity_type == 'destination':
             return await supabase_service.upload_destination_image(file)
-        elif entity_type == 'activity':
-            return await supabase_service.upload_activity_image(file)
     
     @classmethod
     async def delete_image(cls, image_url: str, entity_type: str) -> bool:
@@ -50,7 +47,7 @@ class ImageManager:
         
         Args:
             image_url: URL of the image to delete
-            entity_type: Type of entity (blog, package, destination, activity)
+            entity_type: Type of entity (blog, package, destination)
             
         Returns:
             True if deletion was successful
@@ -64,8 +61,6 @@ class ImageManager:
             return await supabase_service.delete_package_image(image_url)
         elif entity_type == 'destination':
             return await supabase_service.delete_destination_image(image_url)
-        elif entity_type == 'activity':
-            return await supabase_service.delete_activity_image(image_url)
         
         return False
     
@@ -76,7 +71,7 @@ class ImageManager:
         
         Args:
             files: List of uploaded files
-            entity_type: Type of entity (blog, package, destination, activity)
+            entity_type: Type of entity (blog, package, destination)
             
         Returns:
             List of public URLs of the uploaded images
@@ -99,7 +94,7 @@ class ImageManager:
         
         Args:
             image_urls: List of image URLs to delete
-            entity_type: Type of entity (blog, package, destination, activity)
+            entity_type: Type of entity (blog, package, destination)
             
         Returns:
             Dictionary mapping image URLs to deletion success status
@@ -144,10 +139,6 @@ async def upload_destination_image(file: UploadFile) -> str:
     """Upload a destination image"""
     return await ImageManager.upload_image(file, 'destination')
 
-async def upload_activity_image(file: UploadFile) -> str:
-    """Upload an activity image"""
-    return await ImageManager.upload_image(file, 'activity')
-
 async def delete_blog_image(image_url: str) -> bool:
     """Delete a blog image"""
     return await ImageManager.delete_image(image_url, 'blog')
@@ -159,7 +150,3 @@ async def delete_package_image(image_url: str) -> bool:
 async def delete_destination_image(image_url: str) -> bool:
     """Delete a destination image"""
     return await ImageManager.delete_image(image_url, 'destination')
-
-async def delete_activity_image(image_url: str) -> bool:
-    """Delete an activity image"""
-    return await ImageManager.delete_image(image_url, 'activity')

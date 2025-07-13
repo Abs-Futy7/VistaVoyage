@@ -167,22 +167,29 @@ export class BookingService {
 
   async makePayment(id: string, amount: number): Promise<ApiResponse<Booking>> {
     try {
+      console.log('Making payment request:', { id, amount });
+      
+      if (amount <= 0) {
+        throw new Error('Payment amount must be greater than 0');
+      }
+      
       const response = await apiClient.patch<Booking>(
         API_CONFIG.ENDPOINTS.BOOKINGS.PAYMENT(id),
         { 
-          booking_id: id,
-          amount: amount,
-          payment_status: 'pending'
+          payment_amount: amount,
+          payment_method: 'card',
+          payment_reference: `payment-${Date.now()}`
         }
       );
       
       return response;
     } catch (error: any) {
       console.error('Make payment error:', error);
+      console.error('Error details:', error.response?.data);
       return {
         success: false,
-        message: error?.message || 'Failed to process payment',
-        errors: [error?.message || 'Payment processing failed']
+        message: error?.response?.data?.detail || error?.message || 'Failed to process payment',
+        errors: [error?.response?.data?.detail || error?.message || 'Payment processing failed']
       };
     }
   }

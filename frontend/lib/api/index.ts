@@ -10,8 +10,6 @@ export { bookingService } from './services/bookings';
 export { adminService } from './services/admin';
 export { blogService } from './services/blog';
 export { destinationService } from './services/destinations';
-export { offerService } from './services/offers';
-export { tripTypeService } from './services/tripTypes';
 export { promoCodeService } from './services/promocode';
 
 // Diagnostics

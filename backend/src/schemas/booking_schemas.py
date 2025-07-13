@@ -3,7 +3,6 @@ from typing import Optional
 from datetime import datetime
 from enum import Enum
 import uuid
-from .booking_payment_schemas import BookingPaymentResponseModel
 
 
 class BookingStatus(str, Enum):
@@ -84,7 +83,10 @@ class BookingResponseModel(BaseModel):
     promo_code_id: Optional[uuid.UUID] = None
     status: str
     payment_status: str
-    booking_date: datetime
+    total_amount: float
+    paid_amount: float
+    discount_amount: float
+    booking_date: Optional[datetime] = None
     cancellation_date: Optional[datetime] = None
     cancellation_reason: Optional[str] = None
     created_at: datetime
@@ -103,13 +105,9 @@ class BookingResponseModel(BaseModel):
 
 
 class BookingDetailResponseModel(BookingResponseModel):
-    """Detailed booking response with payment information"""
-    payment: Optional[BookingPaymentResponseModel] = None
+    """Detailed booking response with enhanced information"""
     
-    # Computed fields from payment for backward compatibility
-    total_amount: Optional[float] = None
-    paid_amount: Optional[float] = None
-    discount_amount: Optional[float] = None
+    # These fields are now directly on the booking model
     outstanding_amount: Optional[float] = None
     is_fully_paid: Optional[bool] = None
 
@@ -121,9 +119,4 @@ class BookingListResponseModel(BaseModel):
     page: int
     limit: int
     total_pages: int
-
-class PaymentRequestModel(BaseModel):
-    booking_id: uuid.UUID
-    amount: float = Field(gt=0, description="Amount to be paid")
-    payment_status: PaymentStatus = PaymentStatus.PENDING
 

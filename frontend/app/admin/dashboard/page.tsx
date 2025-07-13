@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Package, Calendar, FileText, DollarSign, TrendingUp, Activity } from 'lucide-react';
+import { Users, Package, Calendar, FileText, DollarSign, TrendingUp } from 'lucide-react';
 import { adminService, DashboardStats } from '@/lib/api/services/admin';
 import { toast } from 'sonner';
 
@@ -56,7 +56,7 @@ export default function AdminDashboard() {
       <div className="p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <Activity className="h-8 w-8 animate-spin mx-auto text-blue-500" />
+            <div className="h-8 w-8 animate-spin mx-auto text-blue-500" />
             <p className="mt-2 text-gray-600">Loading dashboard...</p>
           </div>
         </div>

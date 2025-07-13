@@ -19,7 +19,7 @@ export const mockPackages = [
     rating: 4.5,
     imageUrl: "/images/bali.png",
     imageHint: "paris eiffel",
-    tripType: "Cultural",
+    
     description:
       "Experience the magic of Paris, from the Eiffel Tower to the Louvre.",
   },
@@ -32,7 +32,7 @@ export const mockPackages = [
     rating: 4.8,
     imageUrl: "/images/bali.png",
     imageHint: "rome colosseum",
-    tripType: "Historical",
+    
     description:
       "Explore ancient ruins and vibrant culture in the heart of Italy.",
   },
@@ -45,7 +45,7 @@ export const mockPackages = [
     rating: 4.7,
     imageUrl: "/images/bali.png",
     imageHint: "tokyo city",
-    tripType: "Modern",
+    
     description:
       "Discover the bustling metropolis and serene temples of Tokyo.",
   },
@@ -58,7 +58,7 @@ export const mockPackages = [
     rating: 4.6,
     imageUrl: "/images/bali.png",
     imageHint: "bali beach",
-    tripType: "Relaxation",
+    
     description:
       "Relax on pristine beaches and enjoy the spiritual ambiance of Bali.",
   },
@@ -282,7 +282,7 @@ export const specialOffers = [
     duration: '5 days / 4 nights',
     summary: 'Fall in love with the City of Light. Includes Eiffel Tower visit, Seine cruise, and luxury accommodation.',
     expiryDate: '2024-08-15',
-    tripType: 'Romantic',
+    
     featured: true
   },
   {
@@ -297,7 +297,7 @@ export const specialOffers = [
     duration: '7 days / 6 nights',
     summary: 'Experience the ultimate relaxation in Bali\'s top-rated resorts with spa treatments included.',
     expiryDate: '2024-09-10',
-    tripType: 'Beach',
+    
     featured: true
   },
   {
@@ -312,7 +312,7 @@ export const specialOffers = [
     duration: '10 days / 9 nights',
     summary: 'Witness the magical cherry blossom season with guided tours through Japan\'s most beautiful gardens.',
     expiryDate: '2024-09-30',
-    tripType: 'Cultural',
+    
     featured: false
   },
   {
@@ -327,7 +327,7 @@ export const specialOffers = [
     duration: '8 days / 7 nights',
     summary: 'Island hop through the stunning Greek islands with private boat tours and sunset dinners.',
     expiryDate: '2024-08-20',
-    tripType: 'Beach',
+    
     featured: false
   },
   {
@@ -342,7 +342,7 @@ export const specialOffers = [
     duration: '6 days / 5 nights',
     summary: 'Experience the ultimate wildlife adventure with guided safari tours and luxury glamping.',
     expiryDate: '2024-07-30',
-    tripType: 'Adventure',
+    
     featured: false
   },
   {
@@ -357,7 +357,7 @@ export const specialOffers = [
     duration: '6 days / 5 nights',
     summary: 'Hit the slopes with this all-inclusive ski package featuring equipment rental and lessons.',
     expiryDate: '2024-08-25',
-    tripType: 'Adventure',
+    
     featured: true
   }
 ];

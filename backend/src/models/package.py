@@ -11,7 +11,6 @@ if TYPE_CHECKING:
     from .destination import Destination
     from .trip_type import TripType
     from .offer import Offer
-    from .activity import Activity
 from .package_image import PackageImage
 from .package_details import PackageDetails
 from .package_schedule import PackageSchedule
@@ -71,22 +70,7 @@ class Package(SQLModel, table=True):
         )
     )
     
-    trip_type_id: uuid.UUID = Field(
-        sa_column=Column(
-            pg.UUID(as_uuid=True),
-            ForeignKey("trip_types.id"),
-            nullable=False
-        )
-    )
-    
-    offer_id: Optional[uuid.UUID] = Field(
-        default=None,
-        sa_column=Column(
-            pg.UUID(as_uuid=True),
-            ForeignKey("offers.id"),
-            nullable=True
-        )
-    )
+    # Removed trip_type_id and offer_id fields
     
     
  
@@ -136,13 +120,12 @@ class Package(SQLModel, table=True):
 
     # Relationships
     destination: "Destination" = Relationship(back_populates="packages")
-    trip_type: "TripType" = Relationship(back_populates="packages")
-    offer: Optional["Offer"] = Relationship(back_populates="packages")
+    # Removed trip_type and offer relationships
     bookings: List["Booking"] = Relationship(back_populates="package")
     images: List["PackageImage"] = Relationship(back_populates="package", cascade_delete=True)
     details: Optional["PackageDetails"] = Relationship(back_populates="package", cascade_delete=True)
     schedule: Optional["PackageSchedule"] = Relationship(back_populates="package", cascade_delete=True)
-
+    
     def __repr__(self):
         return f"<Package {self.title}>"
 
@@ -162,12 +145,7 @@ class Package(SQLModel, table=True):
 
     @property
     def effective_price(self) -> float:
-        """Calculate the effective price considering any active offers."""
-        if self.offer and self.offer.is_valid:
-            if self.offer.discount_percentage:
-                return self.price * (1 - self.offer.discount_percentage / 100)
-            elif self.offer.discount_amount:
-                return max(0, self.price - self.offer.discount_amount)
+        """Return the package price (offer logic removed)."""
         return self.price
 
     @property

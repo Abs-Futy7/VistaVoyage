@@ -28,6 +28,7 @@ function MyBookingPage() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [cancellingBooking, setCancellingBooking] = useState<string | null>(null);
   const [processingPayment, setProcessingPayment] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState<{ [key: string]: boolean }>({});
 
   // Debug logging
   console.log('Bookings data:', bookings);
@@ -81,9 +82,13 @@ function MyBookingPage() {
       const success = await cancelBooking(bookingId);
       if (success) {
         toast.success('Booking cancelled successfully');
+        setDialogOpen(prev => ({ ...prev, [bookingId]: false }));
         refetch(); // Refresh the bookings list
+      } else {
+        toast.error('Failed to cancel booking');
       }
     } catch (error) {
+      console.error('Cancel booking error:', error);
       toast.error('Failed to cancel booking');
     } finally {
       setCancellingBooking(null);
@@ -91,14 +96,24 @@ function MyBookingPage() {
   };
 
   const handleMakePayment = async (bookingId: string, amount: number) => {
+    console.log('Making payment for booking:', bookingId, 'amount:', amount);
+    
+    if (amount <= 0) {
+      toast.error('Invalid payment amount');
+      return;
+    }
+    
     setProcessingPayment(bookingId);
     try {
       const success = await makePayment(bookingId, amount);
       if (success) {
         toast.success('Payment processed successfully');
         refetch(); // Refresh the bookings list
+      } else {
+        toast.error('Payment failed');
       }
     } catch (error) {
+      console.error('Payment error:', error);
       toast.error('Payment failed');
     } finally {
       setProcessingPayment(null);
@@ -113,10 +128,13 @@ function MyBookingPage() {
 
   const canMakePayment = (booking: any) => {
     console.log('Checking payment for:', booking.id, 'payment_status:', booking.payment_status, 'status:', booking.status);
-    // Can make payment if payment is pending and booking is not cancelled or refunded
-    return booking.payment_status === 'pending' && 
+    // Can make payment if payment is pending or partially paid AND booking is active (pending or confirmed)
+    return (booking.payment_status === 'pending' || booking.payment_status === 'partially_paid') && 
+           (booking.status === 'pending' || booking.status === 'confirmed') &&
            booking.status !== 'cancelled' && 
-           booking.status !== 'refunded';
+           booking.status !== 'refunded' &&
+           booking.status !== 'completed' &&
+           booking.paid_amount < booking.total_amount;
   };
 
   // Loading state
@@ -231,17 +249,17 @@ function MyBookingPage() {
                       #{booking.id.substring(0, 8)}...
                     </TableCell>
                     <TableCell>
-                      {booking.packageTitle || (booking as any).package_title || (booking as any).title ? (
+                      {booking.packageTitle ? (
                         <div>
                           <Link 
                             href={`/packages/${booking.package_id}`} 
                             className="hover:text-blue-600 hover:underline font-medium"
                           >
-                            {booking.packageTitle || (booking as any).package_title || (booking as any).title}
+                            {booking.packageTitle}
                           </Link>
-                          {(booking.packagePrice || (booking as any).package_price || (booking as any).price) && (
+                          {booking.packagePrice && (
                             <div className="text-sm text-gray-500">
-                              ${booking.packagePrice || (booking as any).package_price || (booking as any).price} per person
+                              ${booking.packagePrice} per person
                             </div>
                           )}
                         </div>
@@ -254,12 +272,12 @@ function MyBookingPage() {
                             Package #{booking.package_id.substring(0, 8)}...
                           </Link>
                           <div className="text-xs text-gray-400 mt-1">
-                            Debug: Available fields
+                            Package details not loaded
                           </div>
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>{new Date(booking.booking_date).toLocaleDateString()}</TableCell>
+                    <TableCell>{booking.booking_date ? new Date(booking.booking_date).toLocaleDateString() : 'N/A'}</TableCell>
                     <TableCell>
                       <div className="space-y-1">
                         <Badge variant={
@@ -286,19 +304,25 @@ function MyBookingPage() {
                       <div className="space-y-1">
                         <Badge variant={
                           booking.payment_status === "paid" ? "default" :
+                          booking.payment_status === "partially_paid" ? "secondary" :
                           booking.payment_status === "pending" ? "secondary" :
                           "destructive"
                         }
                         className={
                           booking.payment_status === "paid" ? "bg-green-500 text-white" :
+                          booking.payment_status === "partially_paid" ? "bg-blue-500 text-white" :
                           booking.payment_status === "pending" ? "bg-orange-500 text-white" :
                           "bg-red-500 text-white"
                         }>
-                          {booking.payment_status.charAt(0).toUpperCase() + booking.payment_status.slice(1)}
+                          {booking.payment_status === "partially_paid" ? "Partially Paid" : 
+                           booking.payment_status.charAt(0).toUpperCase() + booking.payment_status.slice(1)}
                         </Badge>
-                        {booking.payment_status === "pending" && canMakePayment(booking) && (
+                        {(booking.payment_status === "pending" || booking.payment_status === "partially_paid") && canMakePayment(booking) && (
                           <div className="text-xs text-orange-600 mt-1">
-                            Action required
+                            {booking.payment_status === "partially_paid" ? 
+                              `$${(booking.total_amount - booking.paid_amount).toLocaleString()} remaining` : 
+                              'Payment required'
+                            }
                           </div>
                         )}
                       </div>
@@ -337,7 +361,7 @@ function MyBookingPage() {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            title="Make Payment"
+                            title={`Pay remaining $${(booking.total_amount - booking.paid_amount).toLocaleString()}`}
                             onClick={() => handleMakePayment(booking.id, booking.total_amount - booking.paid_amount)}
                             className="text-green-600 hover:text-green-700"
                             disabled={processingPayment === booking.id}
@@ -352,7 +376,10 @@ function MyBookingPage() {
 
                         {/* Cancel Booking Button */}
                         {canCancelBooking(booking) && (
-                          <AlertDialog>
+                          <AlertDialog 
+                            open={dialogOpen[booking.id] || false}
+                            onOpenChange={(open) => setDialogOpen(prev => ({ ...prev, [booking.id]: open }))}
+                          >
                             <AlertDialogTrigger asChild>
                               <Button 
                                 variant="ghost" 
@@ -372,17 +399,29 @@ function MyBookingPage() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Cancel Booking</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to cancel this booking? This action cannot be undone.
-                                  You may be subject to cancellation fees as per our terms and conditions.
+                                  Are you sure you want to cancel this booking for "{booking.packageTitle || 'this package'}"? 
+                                  This action cannot be undone and you may be subject to cancellation fees.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Keep Booking</AlertDialogCancel>
+                                <AlertDialogCancel 
+                                  onClick={() => setDialogOpen(prev => ({ ...prev, [booking.id]: false }))}
+                                >
+                                  Keep Booking
+                                </AlertDialogCancel>
                                 <AlertDialogAction 
                                   onClick={() => handleCancelBooking(booking.id)}
                                   className="bg-red-600 hover:bg-red-700"
+                                  disabled={cancellingBooking === booking.id}
                                 >
-                                  Cancel Booking
+                                  {cancellingBooking === booking.id ? (
+                                    <>
+                                      <AlertTriangle className="h-4 w-4 mr-2 animate-spin" />
+                                      Cancelling...
+                                    </>
+                                  ) : (
+                                    'Cancel Booking'
+                                  )}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>

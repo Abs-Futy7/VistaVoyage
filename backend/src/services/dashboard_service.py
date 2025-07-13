@@ -4,10 +4,7 @@ from sqlmodel import select, func
 from datetime import datetime, timedelta
 import uuid
 
-from .activity_service import activity_service
 from .destination_service import destination_service
-from .offer_service import offer_service
-from .trip_type_service import trip_type_service
 from .package_service import package_service
 from .booking_service import BookingService
 from .promo_code_service import PromoCodeService
@@ -30,10 +27,7 @@ class DashboardService:
         package_stats = await package_service.get_package_stats(session)
         booking_stats = await self.booking_service.get_booking_stats(session)
         blog_stats = await blog_service.get_blog_stats(session) if hasattr(blog_service, 'get_blog_stats') else {}
-        activity_stats = await activity_service.get_activity_stats(session)
         destination_stats = await destination_service.get_destination_stats(session)
-        offer_stats = await offer_service.get_offer_stats(session)
-        trip_type_stats = await trip_type_service.get_trip_type_stats(session)
         promo_stats = await PromoCodeService.get_promo_code_stats(session)
         
         # Combine all statistics
@@ -47,7 +41,7 @@ class DashboardService:
                 "confirmed_bookings": booking_stats.get("bookings_by_status", {}).get("confirmed", 0),
                 "total_revenue": booking_stats.get("total_revenue", 0.0),
                 "total_destinations": destination_stats.get("total_destinations", 0),
-                "total_activities": activity_stats.get("total_activities", 0),
+                "total_activities": destination_stats.get("total_activities", 0),
                 "total_offers": offer_stats.get("total_offers", 0),
                 "valid_offers": offer_stats.get("valid_offers", 0),
                 "total_promo_codes": promo_stats.get("total_promo_codes", 0),
@@ -58,7 +52,7 @@ class DashboardService:
                 "packages": package_stats,
                 "bookings": booking_stats,
                 "blogs": blog_stats,
-                "activities": activity_stats,
+                "activities": destination_stats,
                 "destinations": destination_stats,
                 "offers": offer_stats,
                 "trip_types": trip_type_stats,

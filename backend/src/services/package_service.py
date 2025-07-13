@@ -3,15 +3,9 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, func, delete
 from sqlalchemy.orm import selectinload
 from datetime import datetime
-import uuid
 
 from ..models.package import Package
 from ..models.package_image import PackageImage
-from ..models.package_details import PackageDetails
-from ..models.package_schedule import PackageSchedule
-from ..models.destination import Destination
-from ..models.trip_type import TripType
-from ..models.offer import Offer
 from ..schemas.package_schemas import (
     PackageCreateModel, 
     PackageUpdateModel, 
@@ -33,7 +27,6 @@ class PackageService:
         search: Optional[str] = None,
         active_only: bool = False,
         destination_id: Optional[str] = None,
-        trip_type_id: Optional[str] = None,
         min_price: Optional[float] = None,
         max_price: Optional[float] = None
     ) -> Dict[str, Any]:
@@ -44,9 +37,7 @@ class PackageService:
             selectinload(Package.images),
             selectinload(Package.schedule),
             selectinload(Package.details),
-            selectinload(Package.destination),
-            selectinload(Package.trip_type),
-            selectinload(Package.offer)
+            selectinload(Package.destination)
         )
         
         # Add filters
@@ -63,8 +54,7 @@ class PackageService:
         if destination_id:
             statement = statement.where(Package.destination_id == destination_id)
         
-        if trip_type_id:
-            statement = statement.where(Package.trip_type_id == trip_type_id)
+        # trip_type_id logic removed
         
         if min_price is not None:
             statement = statement.where(Package.price >= min_price)
@@ -89,8 +79,7 @@ class PackageService:
         if destination_id:
             count_statement = count_statement.where(Package.destination_id == destination_id)
         
-        if trip_type_id:
-            count_statement = count_statement.where(Package.trip_type_id == trip_type_id)
+        # trip_type_id logic removed
         
         if min_price is not None:
             count_statement = count_statement.where(Package.price >= min_price)
@@ -147,9 +136,7 @@ class PackageService:
             selectinload(Package.images),
             selectinload(Package.schedule),
             selectinload(Package.details),
-            selectinload(Package.destination),
-            selectinload(Package.trip_type),
-            selectinload(Package.offer)
+            selectinload(Package.destination)
         ).where(Package.id == package_id)
         result = await session.exec(statement)
         return result.first()
@@ -181,10 +168,7 @@ class PackageService:
         # Add relationship names
         if package.destination:
             package_dict['destination_name'] = package.destination.name
-        if package.trip_type:
-            package_dict['trip_type_name'] = package.trip_type.name
-        if package.offer:
-            package_dict['offer_title'] = package.offer.title
+        # Removed trip_type_name and offer_title from response
         
         return PackageDetailResponseModel.model_validate(package_dict)
     
@@ -415,6 +399,5 @@ class PackageService:
             "featured_packages": featured
         }
 
-
-# Create singleton instance
+# Instantiate the service
 package_service = PackageService()

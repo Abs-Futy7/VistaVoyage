@@ -3,7 +3,6 @@ from sqlalchemy.exc import SQLAlchemyError
 from typing import Optional, Tuple, List, Dict, Any
 from datetime import datetime
 from ..models.promo_code import PromoCode
-from ..models.offer import Offer
 from ..schemas.promo_code_schemas import PromoCodeValidationResponseModel, PromoCodeResponseModel
 import uuid
 from sqlalchemy import func
@@ -36,7 +35,6 @@ class PromoCodeService:
         try:
             statement = (
                 select(PromoCode)
-                .options(selectinload(PromoCode.offer))
                 .order_by(PromoCode.created_at.desc())
             )
             if active_only:
@@ -49,9 +47,6 @@ class PromoCodeService:
             promo_codes_serialized = []
             for pc in promo_codes:
                 promo_dict = pc.__dict__.copy()
-                if hasattr(pc, 'offer') and pc.offer:
-                    offer = pc.offer
-                    promo_dict['offer_id'] = offer.id
                 promo_dict['discount_type'] = getattr(pc, 'discount_type', None)
                 promo_dict['discount_value'] = getattr(pc, 'discount_value', None)
                 promo_dict['is_valid'] = getattr(pc, 'is_valid', True)
@@ -84,7 +79,7 @@ class PromoCodeService:
             PromoCodeValidationResponseModel with validation results
         """
         try:
-            statement = select(PromoCode).options(selectinload(PromoCode.offer))
+            statement = select(PromoCode)
             if code:
                 statement = statement.where(PromoCode.code == code.upper())
             elif promo_code_id:
@@ -131,15 +126,14 @@ class PromoCodeService:
                         if promo_code.current_uses >= promo_code.max_uses:
                             message = "Promo code has reached its usage limit"
                 
-                return PromoCodeValidationResponseModel(
-                    is_valid=False,
-                    message=message,
-                    discount_amount=0.0,
-                    final_amount=booking_amount,
-                    promo_code_id=promo_code.id,
-                    offer_title=getattr(promo_code.offer, 'title', None),
-                    remaining_uses=getattr(promo_code, 'remaining_uses', None)
-                )
+            return PromoCodeValidationResponseModel(
+                is_valid=False,
+                message=message,
+                discount_amount=0.0,
+                final_amount=booking_amount,
+                promo_code_id=promo_code.id,
+                remaining_uses=getattr(promo_code, 'remaining_uses', None)
+            )
             # Calculate discount
             discount_amount = 0.0
             if promo_code.discount_type == "percentage":
@@ -156,7 +150,6 @@ class PromoCodeService:
                 discount_percentage=promo_code.discount_value if promo_code.discount_type == "percentage" else None,
                 final_amount=final_amount,
                 promo_code_id=promo_code.id,
-                offer_title=getattr(promo_code.offer, 'title', None),
                 remaining_uses=getattr(promo_code, 'remaining_uses', None)
             )
         except SQLAlchemyError as e:
@@ -181,7 +174,6 @@ class PromoCodeService:
         statement = (
             select(PromoCode)
             .where(PromoCode.code == code.upper())
-            .join(Offer)
         )
         return session.exec(statement).first()
     
@@ -191,33 +183,8 @@ class PromoCodeService:
         statement = (
             select(PromoCode)
             .where(PromoCode.id == promo_code_id)
-            .join(Offer)
         )
         return session.exec(statement).first()
-    
-    @staticmethod
-    def _calculate_discount(offer: Offer, booking_amount: float) -> Tuple[float, float]:
-        """
-        Calculate discount amount and final amount.
-        
-        Args:
-            offer: The offer object
-            booking_amount: Original booking amount
-            
-        Returns:
-            Tuple of (discount_amount, final_amount)
-        """
-        discount_amount = 0.0
-        
-        if offer.discount_type == "percentage":
-            discount_amount = (booking_amount * offer.discount_percentage) / 100
-            if offer.max_discount_amount:
-                discount_amount = min(discount_amount, offer.max_discount_amount)
-        elif offer.discount_type == "fixed":
-            discount_amount = min(offer.discount_amount or 0.0, booking_amount)
-        
-        final_amount = max(0.0, booking_amount - discount_amount)
-        return discount_amount, final_amount
     
     @staticmethod
     def use_promo_code(session: Session, promo_code_id: uuid.UUID) -> bool:
@@ -247,7 +214,6 @@ class PromoCodeService:
     def create_promo_code(
         session: Session,
         code: str,
-        offer_id: uuid.UUID,
         max_usage: Optional[int] = None,
         is_active: bool = True
     ) -> Optional[PromoCode]:
@@ -257,17 +223,15 @@ class PromoCodeService:
         Args:
             session: Database session
             code: Promo code string
-            offer_id: Associated offer ID
             max_usage: Maximum usage limit
             is_active: Whether the code is active
-            
+        
         Returns:
             Created PromoCode or None if failed
         """
         try:
             promo_code = PromoCode(
                 code=code.upper(),
-                offer_id=offer_id,
                 max_usage=max_usage,
                 current_usage=0,
                 is_active=is_active
@@ -276,7 +240,7 @@ class PromoCodeService:
             session.commit()
             session.refresh(promo_code)
             return promo_code
-        except SQLAlchemyError:
+        except Exception:
             session.rollback()
             return None
     
@@ -416,7 +380,6 @@ class PromoCodeService:
         try:
             statement = (
                 select(PromoCode)
-                .options(selectinload(PromoCode.offer))
                 .where(PromoCode.id == promo_code_id)
             )
             promo_code = (await session.exec(statement)).first()
@@ -426,9 +389,7 @@ class PromoCodeService:
             
             # Convert to response model
             promo_dict = promo_code.__dict__.copy()
-            if hasattr(promo_code, 'offer') and promo_code.offer:
-                offer = promo_code.offer
-                promo_dict['offer_id'] = offer.id
+            # offer fields removed
             promo_dict['discount_type'] = getattr(promo_code, 'discount_type', None)
             promo_dict['discount_value'] = getattr(promo_code, 'discount_value', None)
             promo_dict['is_valid'] = getattr(promo_code, 'is_valid', True)

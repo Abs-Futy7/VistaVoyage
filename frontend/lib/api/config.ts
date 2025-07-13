@@ -101,6 +101,7 @@ export const API_CONFIG = {
       BOOKINGS: '/api/v1/admin/bookings',
       BOOKING_DETAILS: (id: string) => `/api/v1/admin/bookings/${id}`,
       BOOKING_UPDATE_STATUS: (id: string) => `/api/v1/admin/bookings/${id}/status`,
+      BOOKING_DELETE: (id: string) => `/api/v1/admin/bookings/${id}`,
       
       // Destinations
       DESTINATIONS: '/api/v1/admin/destinations',
@@ -116,14 +117,6 @@ export const API_CONFIG = {
       TRIP_TYPE_CREATE: '/api/v1/admin/trip-types',
       TRIP_TYPE_UPDATE: (id: string) => `/api/v1/admin/trip-types/${id}`,
       TRIP_TYPE_DELETE: (id: string) => `/api/v1/admin/trip-types/${id}`,
-      
-      // Activities
-      ACTIVITIES: '/api/v1/admin/activities',
-      ACTIVITY_CREATE: '/api/v1/admin/activities',
-      ACTIVITY_UPDATE: (id: string) => `/api/v1/admin/activities/${id}`,
-      ACTIVITY_DELETE: (id: string) => `/api/v1/admin/activities/${id}`,
-      ACTIVITY_UPLOAD_IMAGE: '/api/v1/admin/activities/upload-image',
-      ACTIVITY_DETAILS: (id: string) => `/api/v1/admin/activities/${id}/details`,
       
       // Offers
       OFFERS: '/api/v1/admin/offers',
@@ -160,10 +153,6 @@ export const API_CONFIG = {
       DESTINATIONS: {
         BASE: '/api/v1/user/destinations',
         BY_ID: (id: string) => `/api/v1/user/destinations/${id}`,
-      },
-      ACTIVITIES: {
-        BASE: '/api/v1/user/activities',
-        BY_ID: (id: string) => `/api/v1/user/activities/${id}`,
       },
       OFFERS: {
         BASE: '/api/v1/user/offers',
