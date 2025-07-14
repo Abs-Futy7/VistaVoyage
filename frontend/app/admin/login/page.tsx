@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff, Lock, User, Loader2, Shield } from 'lucide-react';
 import { adminAuthService } from '@/lib/api/services/admin-auth';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 export default function AdminLoginPage() {
   const [formData, setFormData] = useState({
@@ -86,7 +87,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-200 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
@@ -95,7 +96,7 @@ export default function AdminLoginPage() {
               <Shield className="h-8 w-8 text-white" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Admin Portal</h1>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2 font-[Inter] tracking-tight">Admin Portal</h1>
           <p className="text-gray-600">Sign in to access the admin dashboard</p>
         </div>
 
@@ -172,8 +173,10 @@ export default function AdminLoginPage() {
               </Button>
             </form>
 
-            <div className="mt-6 text-center text-sm text-gray-600">
-              <p>Need help? Contact system administrator</p>
+            <div className="flex justify-end mt-6 text-sm text-gray-600 tracking-tight font-[Inter]">
+              <Link href="/" className="text-blue-600 hover:underline">
+                Back to Home
+              </Link>
             </div>
           </CardContent>
         </Card>

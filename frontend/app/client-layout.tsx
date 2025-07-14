@@ -1,5 +1,6 @@
 
 "use client";
+import FloatingTravelBot from "@/components/Bot";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { Toaster } from "@/components/ui/sonner";
@@ -15,6 +16,7 @@ function ClientLayout({ children }: { children: React.ReactNode }) {
       {!isAdminRoute && !isAuthRoute && <Navbar />}
       {children}
       <Toaster />
+      {!isAdminRoute && !isAuthRoute && <FloatingTravelBot />}
       {!isAdminRoute && !isAuthRoute && <Footer />}
     </>
   );

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { BlogComments } from '@/utils/contants';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, Clock, User, Share2, Bookmark, MessageCircle, Globe, Tag, Facebook, Twitter, Linkedin, Mail, Loader2 } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, User, Share2, Bookmark, MessageCircle, Globe, Facebook, Twitter, Linkedin, Mail, Loader2 } from 'lucide-react';
 import BlogCard from '@/components/BlogCard';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from "sonner";
@@ -169,19 +169,9 @@ function FullBlogPage({ params }: { params: Promise<{ id: string }> }) {
               >
                 {blog.category || "Travel"}
               </Link>
-              
-              {blog.tags && blog.tags.map((tag: string) => (
-                <Link 
-                  key={tag} 
-                  href={`/blogs?tag=${tag}`}
-                  className="bg-white/20 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full hover:bg-white/30 transition-colors"
-                >
-                  {tag}
-                </Link>
-              ))}
             </div>
             
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-headline font-bold text-white mb-4 max-w-4xl">
+            <h1 className="text-3xl md:text-5xl lg:text-7xl font-normal text-white mb-4 max-w-4xl font-[Bebas_Neue]">
               {blog.title}
             </h1>
             
@@ -279,102 +269,15 @@ function FullBlogPage({ params }: { params: Promise<{ id: string }> }) {
                 </div>
               )}
             </div>
-            
-            <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors">
-              <Bookmark className="h-4 w-4" />
-              Save
-            </button>
-          </div>
-          
-          {/* Tags */}
-          {blog.tags && blog.tags.length > 0 && (
-            <div className="mt-10 pt-6 border-t border-gray-200">
-              <h4 className="font-medium text-gray-700 mb-3 flex items-center">
-                <Tag className="h-4 w-4 mr-2" /> Tags
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {blog.tags.map((tag: string) => (
-                  <Link 
-                    key={tag} 
-                    href={`/blogs?tag=${tag}`}
-                    className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1 rounded-full text-sm transition-colors"
-                  >
-                    {tag}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          
-          
-          {/* Comment section */}
-          <div className="mt-10 pt-6 border-t border-gray-200">
-            <h4 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
-              <MessageCircle className="h-5 w-5 mr-2" /> 
-              Comments (3)
-            </h4>
-            
-            <div className="space-y-6">
-              {BlogComments.map((comment, index) => (
-                <div key={index} className="bg-gray-50 rounded-xl p-4">
-                  <div className="flex items-start">
-                    <Avatar className="h-10 w-10 mr-3">
-                      <AvatarImage src={comment.avatar} />
-                      <AvatarFallback className="bg-blue-600 text-white">
-                        {comment.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex justify-between items-center mb-1">
-                        <h5 className="font-medium text-gray-800">{comment.name}</h5>
-                        <span className="text-xs text-gray-500">{comment.date}</span>
-                      </div>
-                      <p className="text-gray-600 text-sm">{comment.content}</p>
-                      <button className="text-blue-600 hover:text-blue-800 text-xs mt-2 font-medium">
-                        Reply
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            {/* Comment form */}
-            <div className="mt-8">
-              <h5 className="font-medium text-gray-800 mb-4">Leave a comment</h5>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <input 
-                    type="text" 
-                    placeholder="Your name" 
-                    className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 bg-gray-100"
-                  />
-                  <input 
-                    type="email" 
-                    placeholder="Your email" 
-                    className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 bg-gray-100"
-                  />
-                </div>
-                <textarea 
-                  rows={4} 
-                  placeholder="Your comment" 
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 bg-gray-100"
-                ></textarea>
-                <button className="bg-blue-600 hover:bg-blue-700 px-4 py-2 text-white rounded-md transition-colors">
-                  Post Comment
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
       
       {/* Related posts */}
       {relatedBlogs.length > 0 && (
-        <div className="bg-gray-50 py-12">
+        <div className="py-12">
           <div className="container mx-auto px-4">
-            <h3 className="text-2xl font-headline font-bold text-gray-800 mb-6">Related Articles</h3>
+            <h3 className="text-2xl font-semibold tracking-tight text-blue-600 mb-6">Related Articles</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {relatedBlogs.map(relatedBlog => (
                 <BlogCard key={relatedBlog.slug} blog={relatedBlog} />
@@ -383,8 +286,6 @@ function FullBlogPage({ params }: { params: Promise<{ id: string }> }) {
           </div>
         </div>
       )}
-      
-      
     </div>
   );
 }

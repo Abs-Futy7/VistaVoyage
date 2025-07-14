@@ -86,7 +86,7 @@ export default function DestinationDetailsPage() {
                 <MapPin className="h-5 w-5" />
                 <span className="text-lg">{destination.country}{destination.city ? `, ${destination.city}` : ""}</span>
               </div>
-              <h1 className="text-4xl md:text-5xl font-bold leading-tight">
+              <h1 className="text-5xl md:text-7xl font-[Bebas_Neue] leading-tight">
                 {destination.name}
               </h1>
             </div>
@@ -95,53 +95,110 @@ export default function DestinationDetailsPage() {
       </section>
 
       {/* Main content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 md:grid-cols-3 gap-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Left: Details */}
-        <div className="md:col-span-2 space-y-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>About {destination.name}</CardTitle>
+        <div className="lg:col-span-3 space-y-8">
+          <Card className="rounded-xl bg-gradient-to-t from-white to-blue-50/30 border-1 border-blue-600/60">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-2xl font-bold flex items-center text-primary">
+                <Globe className="h-6 w-6 mr-3 text-blue-600" />
+                About {destination.name}
+                
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700 text-lg leading-relaxed">
-                {destination.description || "No description available."}
-              </p>
+              <div className="prose prose-lg max-w-none">
+                <p className="text-gray-700 text-lg leading-relaxed">
+                  {destination.description || "This destination offers unique experiences and breathtaking views that will create lasting memories. From its rich cultural heritage to stunning natural landscapes, every moment here is an adventure waiting to be discovered."}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Travel Highlights */}
+          <Card className="rounded-xl bg-gradient-to-t from-white to-green-50/30 border-1 border-blue-600/60">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-bold flex items-center text-primary">
+                <MapPin className="h-5 w-5 mr-2 text-green-600" />
+                Travel Highlights
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center p-4 bg-blue-50 rounded-xl border border-blue-200">
+                  <MapPin className="h-5 w-5 text-blue-600 mr-3 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-gray-900">Location</p>
+                    <p className="text-sm text-gray-600">{destination.city ? `${destination.city}, ` : ""}{destination.country}</p>
+                  </div>
+                </div>
+                
+                {destination.best_time_to_visit && (
+                  <div className="flex items-center p-4 bg-green-50 rounded-xl border border-green-200">
+                    <CalendarDays className="h-5 w-5 text-green-600 mr-3 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-gray-900">Best Time to Visit</p>
+                      <p className="text-sm text-gray-600">{destination.best_time_to_visit}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {destination.timezone && (
+                  <div className="flex items-center p-4 bg-purple-50 rounded-xl border border-purple-200">
+                    <Clock className="h-5 w-5 text-purple-600 mr-3 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-gray-900">Timezone</p>
+                      <p className="text-sm text-gray-600">{destination.timezone}</p>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex items-center p-4 bg-orange-50 rounded-xl border border-orange-200">
+                  <Globe className="h-5 w-5 text-orange-600 mr-3 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-gray-900">Country</p>
+                    <p className="text-sm text-gray-600">{destination.country}</p>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
+
         {/* Right: Info Sidebar */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Destination Info</CardTitle>
+        <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-6 self-start">
+          
+
+          <Card className="rounded-xl bg-gradient-to-t from-white to-gray-100/50 border-1 border-blue-600/60">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-bold flex items-center text-primary">
+                <Clock className="h-5 w-5 mr-2" />
+                Details
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-2 text-gray-700">
-                <MapPin className="h-5 w-5 text-blue-500" />
-                <span>{destination.city ? `${destination.city}, ` : ""}{destination.country}</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <CalendarDays className="h-5 w-5 text-blue-500" />
-                <span>Best time: {destination.best_time_to_visit || "N/A"}</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <Globe className="h-5 w-5 text-blue-500" />
-                <span>Timezone: {destination.timezone || "N/A"}</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <Clock className="h-5 w-5 text-blue-500" />
-                <span>Created: {destination.created_at ? new Date(destination.created_at).toLocaleDateString() : "N/A"}</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <Clock className="h-5 w-5 text-blue-500" />
-                <span>Updated: {destination.updated_at ? new Date(destination.updated_at).toLocaleDateString() : "N/A"}</span>
-              </div>
+            <CardContent className="space-y-3 text-sm text-gray-600">
+              {destination.created_at && (
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="font-medium">Added</span>
+                  <span className="text-gray-700">{new Date(destination.created_at).toLocaleDateString()}</span>
+                </div>
+              )}
+              {destination.updated_at && (
+                <div className="flex justify-between items-center py-2">
+                  <span className="font-medium">Updated</span>
+                  <span className="text-gray-700">{new Date(destination.updated_at).toLocaleDateString()}</span>
+                </div>
+              )}
             </CardContent>
           </Card>
+
           <button
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-semibold transition-colors"
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-4 px-6 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] flex items-center justify-center"
             onClick={() => router.back()}
           >
+            <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
             Back to Destinations
           </button>
         </div>

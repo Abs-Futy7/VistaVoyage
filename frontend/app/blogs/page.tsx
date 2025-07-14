@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, Layers, Tag, Link, X, Loader2 } from "lucide-react";
+import { Search, Layers, Link, X, Loader2 } from "lucide-react";
 import BlogCard from '@/components/BlogCard';
 import { toast } from "sonner";
 import { blogService, Blog, BackendBlog, BlogListResponse, BlogSearchParams } from '@/lib/api/services/blog';
@@ -11,7 +11,6 @@ import { ApiError } from '@/lib/api/types';
 function BlogsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-  const [activeTags, setActiveTags] = useState<string[]>([]);
   const [backendBlogs, setBackendBlogs] = useState<BackendBlog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,8 +36,6 @@ function BlogsPage() {
     "Destination Review", 
     "Travel Story"
   ];
-  
-  const tags = ["Adventure", "Culture", "Food", "Nature", "Tips", "Budget", "Luxury", "Solo Travel"];
 
   // Fetch blogs from backend using blog service
   const fetchBlogs = async (page: number = 1) => {
@@ -93,13 +90,7 @@ function BlogsPage() {
   };
 
   // Filter blogs locally for tags (since backend doesn't support tag filtering yet)
-  const filteredBackendBlogs = React.useMemo(() => {
-    if (activeTags.length === 0) return backendBlogs;
-    
-    return backendBlogs.filter(blog => 
-      blog.tags && blog.tags.some((tag: string) => activeTags.includes(tag))
-    );
-  }, [backendBlogs, activeTags]);
+  const filteredBackendBlogs = backendBlogs;
 
   // Convert filtered backend blogs to BlogCard format
   const filteredBlogs: Blog[] = filteredBackendBlogs.map(blogService.convertBlogFormat);
@@ -115,20 +106,10 @@ function BlogsPage() {
     setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
   };
   
-  // Handle tag toggle
-  const handleTagToggle = (tag: string) => {
-    setActiveTags(prevTags => 
-      prevTags.includes(tag) 
-        ? prevTags.filter(t => t !== tag) 
-        : [...prevTags, tag]
-    );
-  };
-  
   // Clear all filters
   const clearFilters = () => {
     setSearchTerm("");
     setActiveCategory("All");
-    setActiveTags([]);
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 
@@ -159,7 +140,7 @@ function BlogsPage() {
       {/* Hero Section */}
       <div className="bg-gradient-to-tl from-blue-500 to-indigo-600 py-10 text-center">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 className="font-[Bebas_Neue] text-5xl md:text-6xl font-headline text-white mb-6">Travel Chronicles</h1>
+            <h1 className="font-[Bebas_Neue] text-5xl md:text-7xl font-headline text-white mb-6">Travel Chronicles</h1>
             <p className="text-lg text-white/90 max-w-2xl mx-auto">
               Journey through our stories, tips, and inspirations from around the globe.
             </p>
@@ -196,7 +177,7 @@ function BlogsPage() {
                 )}
               </div>
               
-              {(searchTerm || activeCategory !== "All" || activeTags.length > 0) && (
+              {(searchTerm || activeCategory !== "All") && (
                 <div className="mt-3 pt-3 border-t border-gray-200">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">
@@ -242,28 +223,7 @@ function BlogsPage() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-lg rounded-xl bg-gradient-to-t from-white to-blue-200/50">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-xl font-bold flex items-center text-primary">
-                <Tag className="h-5 w-5 mr-2" /> Tags
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              {tags.map(tag => (
-                <button 
-                  key={tag} 
-                  onClick={() => handleTagToggle(tag)}
-                  className={`text-xs px-2.5 py-1.5 rounded-lg transition-all duration-200 border ${
-                    activeTags.includes(tag)
-                      ? "bg-yellow-500 text-white border-yellow-500"
-                      : "bg-yellow-500/20 text-primary hover:bg-yellow-500/20 border-yellow-500/20"
-                  }`}
-                >
-                  {tag}
-                </button>
-              ))}
-            </CardContent>
-          </Card>
+          
         </aside>
 
         {/* Main Blog Content */}
@@ -296,7 +256,7 @@ function BlogsPage() {
               </div>
               
               {/* Pagination */}
-              {pagination.pages > 1 && activeTags.length === 0 && (
+              {pagination.pages > 1 && (
                 <div className="mt-12 flex justify-center">
                   <nav className="inline-flex rounded-md shadow-sm" aria-label="Pagination">
                     <button

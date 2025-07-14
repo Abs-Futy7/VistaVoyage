@@ -51,7 +51,7 @@ export default function AdminPackagesPage() {
     searchTerm,
   } = useAdminPackages();
 
-  // Get destinations and trip types for dropdowns
+  // Get destinations for dropdowns
   const { destinations, loading: destinationsLoading } = useAdminDestinations();
 
   console.log('Destinations:', destinations, 'Loading:', destinationsLoading);
@@ -68,7 +68,6 @@ export default function AdminPackagesPage() {
     const destination = destinations.find(d => d.id === destinationId);
     return destination ? `${destination.name}, ${destination.country}` : destinationId.substring(0, 8) + '...';
   };
- 
 
   // Helper function to construct full image URL
   const getImageUrl = (imagePath: string | undefined) => {
@@ -90,8 +89,8 @@ export default function AdminPackagesPage() {
     title: '',
     description: '',
     price: '',
-    duration_days: '',
-    duration_nights: '',
+    duration_days: '1',
+    duration_nights: '0',
     destination_id: '',
     is_featured: false,
     is_active: true
@@ -204,13 +203,23 @@ export default function AdminPackagesPage() {
       return;
     }
     
-    if (!createFormData.destination_id) {
-      toast.error('Please select a destination');
+    if (!createFormData.price || parseFloat(createFormData.price) <= 0) {
+      toast.error('Please enter a valid price');
       return;
     }
     
-    if (!createFormData.trip_type_id) {
-      toast.error('Please select a trip type');
+    if (!createFormData.duration_days || parseInt(createFormData.duration_days) <= 0) {
+      toast.error('Please enter valid duration days');
+      return;
+    }
+    
+    if (createFormData.duration_nights === '' || parseInt(createFormData.duration_nights) < 0) {
+      toast.error('Please enter valid duration nights');
+      return;
+    }
+    
+    if (!createFormData.destination_id) {
+      toast.error('Please select a destination');
       return;
     }
 
@@ -223,8 +232,6 @@ export default function AdminPackagesPage() {
       return;
     }
     
-    
-    
     // Validate UUID format
     if (!isValidUUID(createFormData.destination_id)) {
       toast.error('Invalid destination ID format');
@@ -234,12 +241,26 @@ export default function AdminPackagesPage() {
     // Extract featured_image file from createFormData
     const featuredImageFile = createFormData.featured_image instanceof File ? createFormData.featured_image : undefined;
 
+    // Ensure duration values are properly converted to integers
+    const durationDays = parseInt(createFormData.duration_days);
+    const durationNights = parseInt(createFormData.duration_nights);
+    
+    if (isNaN(durationDays) || durationDays <= 0) {
+      toast.error('Duration days must be a positive number');
+      return;
+    }
+    
+    if (isNaN(durationNights) || durationNights < 0) {
+      toast.error('Duration nights must be a non-negative number');
+      return;
+    }
+
     const packageData = {
       title: createFormData.title.trim(),
       description: createFormData.description.trim(),
-      price: parseFloat(createFormData.price) || 0,
-      duration_days: parseInt(createFormData.duration_days) || 1,
-      duration_nights: parseInt(createFormData.duration_nights) || 0,
+      price: parseFloat(createFormData.price),
+      duration_days: durationDays,
+      duration_nights: durationNights,
       destination_id: createFormData.destination_id,
       is_featured: Boolean(createFormData.is_featured),
       is_active: Boolean(createFormData.is_active)
@@ -257,8 +278,8 @@ export default function AdminPackagesPage() {
         title: '',
         description: '',
         price: '',
-        duration_days: '',
-        duration_nights: '',
+        duration_days: '1',
+        duration_nights: '0',
         destination_id: '',
         is_featured: false,
         is_active: true
@@ -408,28 +429,7 @@ export default function AdminPackagesPage() {
               </Button>
             </form>
             
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="flex items-center">
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Create Package
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Create New Package</DialogTitle>
-                </DialogHeader>
-                <AdminForm
-                  title=""
-                  fields={formFields}
-                  data={createFormData}
-                  onChange={handleCreateFormChange}
-                  onSubmit={handleCreatePackage}
-                  submitText="Create Package"
-                  loading={loading}
-                />
-              </DialogContent>
-            </Dialog>
+            
           </div>
         </CardContent>
       </Card>
@@ -556,11 +556,6 @@ export default function AdminPackagesPage() {
                         {getDestinationName(pkg.destination_id)}
                       </span>
                     </div>
-                  </div>
-
-                  {/* Package Details */}
-                  <div className="space-y-1">
-                     
                   </div>
 
                   {/* Date */}
