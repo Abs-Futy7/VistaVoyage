@@ -4,8 +4,7 @@ from datetime import datetime
 from enum import Enum
 import uuid
 from .package_image_schemas import PackageImageResponseModel
-from .package_details_schemas import PackageDetailsResponseModel
-from .package_schedule_schemas import PackageScheduleResponseModel
+from .package_detail_schedule_schemas import PackageDetailScheduleResponseModel
 
 
 class PackageCategoryEnum(str, Enum):
@@ -110,22 +109,23 @@ class PackageDetailResponseModel(BaseModel):
     created_at: datetime
     updated_at: datetime
     
-    # Related data from normalized tables
-    schedule: Optional[PackageScheduleResponseModel] = None
-    details: Optional[PackageDetailsResponseModel] = None
+     
     images: Optional[List[PackageImageResponseModel]] = None
-    
-    # Relationship names for display
     destination_name: Optional[str] = None
-    trip_type_name: Optional[str] = None
-    offer_title: Optional[str] = None
-    
-    # Computed fields for backward compatibility
-    duration_days: Optional[int] = None  # From schedule
-    duration_nights: Optional[int] = None  # From schedule
-    highlights: Optional[str] = None  # From details
-    itinerary: Optional[str] = None  # From details
-    image_gallery: Optional[List[str]] = None  # From images
+    # Full combined detail/schedule object
+    detail_schedule: Optional[PackageDetailScheduleResponseModel] = None
+    # Computed fields for backward compatibility (all merged from combined detail/schedule)
+    duration_days: Optional[int] = None
+    duration_nights: Optional[int] = None
+    max_group_size: Optional[int] = None
+    available_from: Optional[datetime] = None
+    available_until: Optional[datetime] = None
+    highlights: Optional[str] = None
+    itinerary: Optional[str] = None
+    inclusions: Optional[str] = None
+    exclusions: Optional[str] = None
+    terms_conditions: Optional[str] = None
+    image_gallery: Optional[List[str]] = None
     
     class Config:
         from_attributes = True

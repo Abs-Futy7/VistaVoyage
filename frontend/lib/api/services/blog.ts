@@ -11,7 +11,7 @@ export interface BackendBlog {
   status: string;
   published_at?: string;
   category: string;
-  tags?: string[];
+  // tags removed
   cover_image?: string;
   is_featured: boolean;
   created_at: string;
@@ -44,7 +44,7 @@ export interface BlogCreateData {
   content: string;
   excerpt?: string;
   category: string;
-  tags?: string[];
+  // tags removed
   cover_image?: File;
 }
 
@@ -53,7 +53,7 @@ export interface BlogUpdateData {
   content?: string;
   excerpt?: string;
   category?: string;
-  tags?: string[];
+  // tags removed
   cover_image?: File;
 }
 
@@ -62,7 +62,7 @@ export interface BlogSearchParams {
   limit?: number;
   search?: string;
   category?: string;
-  tag?: string;
+  // tag removed
 }
 
 // Blog API service
@@ -87,7 +87,7 @@ export const blogService = {
     if (params.limit) searchParams.append('limit', params.limit.toString());
     if (params.search) searchParams.append('search', params.search);
     if (params.category) searchParams.append('category', params.category);
-    if (params.tag) searchParams.append('tag', params.tag);
+    // tag param removed
 
     const endpoint = `${API_CONFIG.ENDPOINTS.USER_API.BLOGS.BASE}?${searchParams.toString()}`;
     return apiClient.get<BlogListResponse>(endpoint);
@@ -146,9 +146,7 @@ export const blogService = {
     formData.append('content', data.content);
     if (data.excerpt) formData.append('excerpt', data.excerpt);
     formData.append('category', data.category);
-    if (data.tags && data.tags.length > 0) {
-      formData.append('tags', data.tags.join(','));
-    }
+    // tags removed
     if (data.cover_image) {
       formData.append('cover_image', data.cover_image);
     }
@@ -165,9 +163,7 @@ export const blogService = {
     if (data.content !== undefined) formData.append('content', data.content);
     if (data.excerpt !== undefined) formData.append('excerpt', data.excerpt);
     if (data.category !== undefined) formData.append('category', data.category);
-    if (data.tags !== undefined) {
-      formData.append('tags', data.tags.join(','));
-    }
+    // tags removed
     if (data.cover_image) {
       formData.append('cover_image', data.cover_image);
     }
@@ -219,7 +215,7 @@ export const blogService = {
 
   // Get blog excerpt
   generateExcerpt: (content: string, maxLength: number = 150): string => {
-    const plainText = content.replace(/<[^>]*>/g, ''); // Remove HTML tags
+    const plainText = content.replace(/<[^>]*>/g, ''); // Remove HTML tags (not blog tags)
     if (plainText.length <= maxLength) return plainText;
     return plainText.substring(0, maxLength).trim() + '...';
   }

@@ -92,15 +92,6 @@ class Blog(SQLModel, table=True):
             nullable=False
         )
     )
-    
-    tags: Optional[List[str]] = Field(
-        default=None,
-        sa_column=Column(
-            pg.ARRAY(pg.VARCHAR),
-            nullable=True
-        )
-    )
-    
     cover_image: Optional[str] = Field(
         default=None,
         sa_column=Column(

@@ -28,7 +28,6 @@ class BlogCreateModel(BaseModel):
     excerpt: Optional[str] = None
     content: str = Field(min_length=1)
     category: str = Field(min_length=1, max_length=50)
-    tags: Optional[List[str]] = None
     cover_image: Optional[str] = None
     status: BlogStatusEnum = BlogStatusEnum.DRAFT
     is_featured: bool = False
@@ -40,7 +39,6 @@ class BlogUpdateModel(BaseModel):
     excerpt: Optional[str] = None
     content: Optional[str] = Field(None, min_length=1)
     category: Optional[str] = Field(None, min_length=1, max_length=50)
-    tags: Optional[List[str]] = None
     cover_image: Optional[str] = None
     status: Optional[BlogStatusEnum] = None
     is_featured: Optional[bool] = None
@@ -53,7 +51,6 @@ class BlogResponseModel(BaseModel):
     excerpt: Optional[str] = None
     content: str
     category: str
-    tags: Optional[List[str]] = None
     cover_image: Optional[str] = None
     status: BlogStatusEnum
     is_featured: bool
@@ -80,7 +77,6 @@ class BlogSummaryResponseModel(BaseModel):
     author_id: uuid.UUID
     excerpt: Optional[str] = None
     category: str
-    tags: Optional[List[str]] = None
     cover_image: Optional[str] = None
     status: BlogStatusEnum
     is_featured: bool

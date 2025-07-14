@@ -9,19 +9,12 @@ from enum import Enum
 if TYPE_CHECKING:
     from .booking import Booking
     from .destination import Destination
-    from .trip_type import TripType
-    from .offer import Offer
+   
 from .package_image import PackageImage
-from .package_details import PackageDetails
-from .package_schedule import PackageSchedule
+from .package_detail_schedule import PackageDetailSchedule
 
 
-class PackageDifficulty(str, Enum):
-    EASY = "easy"
-    MODERATE = "moderate"
-    CHALLENGING = "challenging"
-    EXPERT = "expert"
-
+ 
 
 class Package(SQLModel, table=True):
     """Package model for travel packages."""
@@ -123,8 +116,9 @@ class Package(SQLModel, table=True):
     # Removed trip_type and offer relationships
     bookings: List["Booking"] = Relationship(back_populates="package")
     images: List["PackageImage"] = Relationship(back_populates="package", cascade_delete=True)
-    details: Optional["PackageDetails"] = Relationship(back_populates="package", cascade_delete=True)
-    schedule: Optional["PackageSchedule"] = Relationship(back_populates="package", cascade_delete=True)
+    detail_schedule: Optional["PackageDetailSchedule"] = Relationship(
+        sa_relationship_kwargs={"uselist": False, "cascade": "all, delete-orphan"}
+    )
     
     def __repr__(self):
         return f"<Package {self.title}>"

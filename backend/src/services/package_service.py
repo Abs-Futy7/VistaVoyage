@@ -12,10 +12,8 @@ from ..schemas.package_schemas import (
     PackageResponseModel,
     PackageDetailResponseModel
 )
-from ..schemas.package_details_schemas import PackageDetailsCreateModel
-from ..schemas.package_schedule_schemas import PackageScheduleCreateModel
-from .package_details_service import package_details_service
-from .package_schedule_service import package_schedule_service
+from ..schemas.package_detail_schedule_schemas import PackageDetailScheduleCreateModel
+from .package_detail_schedule_service import package_detail_schedule_service
 
 
 class PackageService:
@@ -32,12 +30,11 @@ class PackageService:
     ) -> Dict[str, Any]:
         """Get paginated list of packages with filtering"""
         
-        # Build the query with relationships
+         
         statement = select(Package).options(
             selectinload(Package.images),
-            selectinload(Package.schedule),
-            selectinload(Package.details),
-            selectinload(Package.destination)
+            selectinload(Package.destination),
+            selectinload(Package.detail_schedule)
         )
         
         # Add filters
@@ -101,27 +98,28 @@ class PackageService:
         # Calculate pagination info
         total_pages = (total + limit - 1) // limit
         
-        # Convert to response models
+        # Convert to response models using the new combined detail/schedule
         package_responses = []
         for package in packages:
             package_dict = package.model_dump()
-            # Add computed fields for backward compatibility
-            if package.schedule:
-                package_dict['duration_days'] = package.schedule.duration_days
-                package_dict['duration_nights'] = package.schedule.duration_nights
-            else:
-                # Fallback to main package fields if present
-                package_dict['duration_days'] = getattr(package, 'duration_days', None)
-                package_dict['duration_nights'] = getattr(package, 'duration_nights', None)
-            if package.details:
-                package_dict['highlights'] = package.details.highlights
-                package_dict['itinerary'] = package.details.itinerary
+            # Fetch combined detail/schedule
+            detail_schedule = await package_detail_schedule_service.get_by_package_id(session, package.id)
+            if detail_schedule:
+                ds_dict = detail_schedule.model_dump()
+                # Always set duration_days and duration_nights from detail_schedule if it exists
+                for key in [
+                    'duration_days', 'duration_nights', 'max_group_size', 'available_from', 'available_until',
+                    'highlights', 'itinerary', 'inclusions', 'exclusions', 'terms_conditions']:
+                    if key in ['duration_days', 'duration_nights']:
+                        package_dict[key] = ds_dict.get(key)
+                    else:
+                        if package_dict.get(key) is None:
+                            package_dict[key] = ds_dict.get(key)
             if package.images:
                 package_dict['image_gallery'] = [img.image_url for img in sorted(package.images, key=lambda x: x.display_order)]
             # Debug log
-            print(f"[get_packages] Package {package.id}: duration_days={package_dict['duration_days']}, duration_nights={package_dict['duration_nights']}")
+            print(f"[get_packages] Package {package.id}: duration_days={package_dict.get('duration_days')}, duration_nights={package_dict.get('duration_nights')}")
             package_responses.append(PackageResponseModel.model_validate(package_dict))
-        
         return {
             "packages": package_responses,
             "total": total,
@@ -131,45 +129,40 @@ class PackageService:
         }
     
     async def get_package_by_id(self, session: AsyncSession, package_id: str) -> Optional[Package]:
-        """Get a single package by ID with all relationships"""
+        """Get a single package by ID with all relationships (except old schedule/details)"""
         statement = select(Package).options(
             selectinload(Package.images),
-            selectinload(Package.schedule),
-            selectinload(Package.details),
             selectinload(Package.destination)
         ).where(Package.id == package_id)
         result = await session.exec(statement)
         return result.first()
     
     async def get_package_detail(self, session: AsyncSession, package_id: str) -> Optional[PackageDetailResponseModel]:
-        """Get detailed package information with all related data"""
+        """Get detailed package information with all related data (using combined detail/schedule)"""
         package = await self.get_package_by_id(session, package_id)
         if not package:
             return None
-        
         # Build detailed response
         package_dict = package.model_dump()
-        
-        # Add related data
-        if package.schedule:
-            package_dict['schedule'] = package.schedule.model_dump()
-            package_dict['duration_days'] = package.schedule.duration_days
-            package_dict['duration_nights'] = package.schedule.duration_nights
-        
-        if package.details:
-            package_dict['details'] = package.details.model_dump()
-            package_dict['highlights'] = package.details.highlights
-            package_dict['itinerary'] = package.details.itinerary
-        
+        # Add related data from combined detail/schedule
+        detail_schedule = await package_detail_schedule_service.get_by_package_id(session, package.id)
+        if detail_schedule:
+            ds_dict = detail_schedule.model_dump()
+            package_dict.update({
+                'schedule': ds_dict,
+                'duration_days': ds_dict.get('duration_days'),
+                'duration_nights': ds_dict.get('duration_nights'),
+                'highlights': ds_dict.get('highlights'),
+                'itinerary': ds_dict.get('itinerary'),
+                'inclusions': ds_dict.get('inclusions'),
+                'exclusions': ds_dict.get('exclusions'),
+                'terms_conditions': ds_dict.get('terms_conditions'),
+            })
         if package.images:
             package_dict['images'] = [img.model_dump() for img in package.images]
             package_dict['image_gallery'] = [img.image_url for img in sorted(package.images, key=lambda x: x.display_order)]
-        
-        # Add relationship names
         if package.destination:
             package_dict['destination_name'] = package.destination.name
-        # Removed trip_type_name and offer_title from response
-        
         return PackageDetailResponseModel.model_validate(package_dict)
     
     async def create_package(
@@ -192,24 +185,14 @@ class PackageService:
         await session.commit()
         await session.refresh(new_package)
         
-        # Create schedule with provided data
-        schedule_data = PackageScheduleCreateModel(
+        # Create combined detail/schedule with provided data
+        detail_schedule_data = PackageDetailScheduleCreateModel(
             package_id=new_package.id,
             duration_days=package_data.duration_days,
             duration_nights=package_data.duration_nights,
             max_group_size=package_data.max_group_size,
             available_from=package_data.available_from,
-            available_until=package_data.available_until
-        )
-        try:
-            await package_schedule_service.create_schedule(session, schedule_data)
-            print(f"Created schedule for package {new_package.id}")
-        except Exception as e:
-            print(f"Error creating schedule: {str(e)}")
-        
-        # Create details with provided data
-        details_data = PackageDetailsCreateModel(
-            package_id=new_package.id,
+            available_until=package_data.available_until,
             highlights=package_data.highlights,
             itinerary=package_data.itinerary,
             inclusions=package_data.inclusions,
@@ -217,10 +200,10 @@ class PackageService:
             terms_conditions=package_data.terms_conditions
         )
         try:
-            await package_details_service.create_details(session, details_data)
-            print(f"Created details for package {new_package.id}")
+            await package_detail_schedule_service.create_detail_schedule(session, detail_schedule_data)
+            print(f"Created detail/schedule for package {new_package.id}")
         except Exception as e:
-            print(f"Error creating details: {str(e)}")
+            print(f"Error creating detail/schedule: {str(e)}")
         
         # Create package images if provided
         if package_data.image_gallery:
@@ -253,56 +236,71 @@ class PackageService:
         package_data: PackageUpdateModel
     ) -> Optional[Package]:
         """Update an existing package and its related data"""
-        
         # Get existing package
         package = await self.get_package_by_id(session, package_id)
         if not package:
             return None
-        
+
         # Update main package fields
         main_package_fields = {
-            'title', 'description', 'price', 'destination_id', 'trip_type_id', 
+            'title', 'description', 'price', 'destination_id', 'trip_type_id',
             'offer_id', 'featured_image', 'is_featured', 'is_active'
         }
-        
+
         update_data = package_data.model_dump(exclude_unset=True, exclude_none=True)
-        
+
         for field, value in update_data.items():
             if field in main_package_fields and hasattr(package, field):
                 setattr(package, field, value)
-        
+
         package.updated_at = datetime.now()
         session.add(package)
         await session.commit()
         await session.refresh(package)
-        
-        # Update schedule if schedule data provided
-        schedule_fields = {'duration_days', 'duration_nights', 'max_group_size', 'available_from', 'available_until'}
-        schedule_updates = {k: v for k, v in update_data.items() if k in schedule_fields}
-        
-        if schedule_updates:
-            from ..schemas.package_schedule_schemas import PackageScheduleUpdateModel
-            schedule_update = PackageScheduleUpdateModel(**schedule_updates)
-            await package_schedule_service.update_schedule(session, package.id, schedule_update)
-        
-        # Update details if detail data provided
-        detail_fields = {'highlights', 'itinerary', 'inclusions', 'exclusions', 'terms_conditions'}
-        detail_updates = {k: v for k, v in update_data.items() if k in detail_fields}
-        
-        if detail_updates:
-            from ..schemas.package_details_schemas import PackageDetailsUpdateModel
-            details_update = PackageDetailsUpdateModel(**detail_updates)
-            await package_details_service.update_details(session, package.id, details_update)
-        
+
+        # Update or create combined detail/schedule if any relevant data provided
+        combined_fields = {
+            'duration_days', 'duration_nights', 'max_group_size', 'available_from', 'available_until',
+            'highlights', 'itinerary', 'inclusions', 'exclusions', 'terms_conditions'
+        }
+        combined_updates = {k: v for k, v in update_data.items() if k in combined_fields}
+        if combined_updates:
+            from ..schemas.package_detail_schedule_schemas import PackageDetailScheduleUpdateModel, PackageDetailScheduleCreateModel
+            # Check if detail_schedule exists
+            detail_schedule = await package_detail_schedule_service.get_by_package_id(session, package.id)
+            if detail_schedule:
+                detail_schedule_update = PackageDetailScheduleUpdateModel(**combined_updates)
+                await package_detail_schedule_service.update_detail_schedule(session, package.id, detail_schedule_update)
+            else:
+                # If not exists, create it (requires all required fields)
+                # Try to get required fields from update_data, fallback to defaults if needed
+                required_fields = ['duration_days', 'duration_nights']
+                missing = [f for f in required_fields if f not in combined_updates]
+                if missing:
+                    # Try to get from package (if possible)
+                    for f in missing:
+                        val = getattr(package, f, None)
+                        if val is not None:
+                            combined_updates[f] = val
+                # If still missing required, set to 1 (safe fallback)
+                for f in required_fields:
+                    if f not in combined_updates or combined_updates[f] is None:
+                        combined_updates[f] = 1
+                detail_schedule_create = PackageDetailScheduleCreateModel(
+                    package_id=package.id,
+                    **combined_updates
+                )
+                await package_detail_schedule_service.create_detail_schedule(session, detail_schedule_create)
+
         # Update package images if provided
         if 'image_gallery' in update_data:
             from ..services.package_image_service import package_image_service
             from ..schemas.package_image_schemas import PackageImageCreateModel
-            
+
             # Delete existing images for this package
             await session.execute(delete(PackageImage).where(PackageImage.package_id == package.id))
             await session.commit()
-            
+
             # Add all gallery images to the package
             if update_data.get('image_gallery'):
                 for i, image_url in enumerate(update_data['image_gallery']):
@@ -317,7 +315,7 @@ class PackageService:
                         )
                     except Exception as e:
                         print(f"Error creating image {i}: {str(e)}")
-        
+
         # Make sure to fetch the updated package with all relations and return formatted data
         return await self.get_package_detail(session, package_id)
     

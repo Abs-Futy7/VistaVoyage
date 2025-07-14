@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminPackageForm } from '@/components/admin/AdminPackageFormNew';
-import { useAdminDestinations, useAdminTripTypes, useAdminOffers } from '@/hooks/useAdmin';
+import { useAdminDestinations} from '@/hooks/useAdmin';
 import { adminService } from '@/lib/api/services/admin';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,8 +20,6 @@ export default function EditPackagePage({ params }: EditPackagePageProps) {
   const resolvedParams = React.use(params);
   
   const { destinations, loading: destinationsLoading } = useAdminDestinations();
-  const { tripTypes, loading: tripTypesLoading } = useAdminTripTypes();
-  const { offers, loading: offersLoading } = useAdminOffers();
 
   useEffect(() => {
     fetchPackageData();
@@ -169,7 +167,7 @@ export default function EditPackagePage({ params }: EditPackagePageProps) {
     }
   };
 
-  const isLoading = loading || destinationsLoading || tripTypesLoading || offersLoading;
+  const isLoading = loading || destinationsLoading;
 
   if (isLoading) {
     return (
@@ -223,8 +221,6 @@ export default function EditPackagePage({ params }: EditPackagePageProps) {
           <AdminPackageForm
             initialData={packageData}
             destinations={destinations}
-            tripTypes={tripTypes}
-            offers={offers}
             onSubmit={handleSubmit}
             onCancel={() => router.push('/admin/packages')}
             isLoading={false}

@@ -149,7 +149,7 @@ export interface AdminBlog {
   excerpt?: string;
   content: string;
   category: string;
-  tags?: string[];
+  // tags removed
   cover_image?: string;
   status: 'draft' | 'published' | 'archived';
   is_featured: boolean;
@@ -164,7 +164,7 @@ export interface BlogCreateRequest {
   excerpt?: string;
   content: string;
   category: string;
-  tags?: string[];
+  // tags removed
   cover_image?: string;
   status?: 'draft' | 'published' | 'archived';
   is_featured?: boolean;
@@ -176,7 +176,7 @@ export interface BlogUpdateRequest {
   excerpt?: string;
   content?: string;
   category?: string;
-  tags?: string[];
+  // tags removed
   cover_image?: string;
   status?: 'draft' | 'published' | 'archived';
   is_featured?: boolean;
@@ -810,9 +810,7 @@ export class AdminService {
         formData.append('excerpt', blogData.excerpt);
       }
       
-      if (blogData.tags) {
-        formData.append('tags', blogData.tags.join(','));
-      }
+      // tags removed
       
       if (coverImage) {
         formData.append('cover_image', coverImage);
@@ -846,9 +844,7 @@ export class AdminService {
       if (blogData.status !== undefined) formData.append('status', blogData.status);
       if (blogData.is_featured !== undefined) formData.append('is_featured', blogData.is_featured.toString());
       
-      if (blogData.tags !== undefined) {
-        formData.append('tags', blogData.tags.join(','));
-      }
+      // tags removed
       
       if (coverImage) {
         formData.append('cover_image', coverImage);

@@ -7,12 +7,8 @@ from .package_schemas import (
     PackageListResponseModel, PackageDetailResponseModel,
     PackageCategoryEnum 
 )
-from .package_details_schemas import (
-    PackageDetailsCreateModel, PackageDetailsUpdateModel, PackageDetailsResponseModel
-)
-from .package_schedule_schemas import (
-    PackageScheduleCreateModel, PackageScheduleUpdateModel, PackageScheduleResponseModel,
-    ScheduleSummaryModel
+from .package_detail_schedule_schemas import (
+    PackageDetailScheduleCreateModel, PackageDetailScheduleUpdateModel, PackageDetailScheduleResponseModel
 )
 from .booking_schemas import (
     BookingCreateModel, BookingUpdateModel, BookingStatusUpdateModel, 

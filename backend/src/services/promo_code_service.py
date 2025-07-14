@@ -119,21 +119,19 @@ class PromoCodeService:
                     message = "Promo code is not yet active"
                 elif promo_code.expiry_date and promo_code.expiry_date < current_date:
                     message = "Promo code has expired"
-                
                 # Check usage limits for more specific message
                 if hasattr(promo_code, 'max_uses') and promo_code.max_uses is not None:
                     if hasattr(promo_code, 'current_uses') and promo_code.current_uses is not None:
                         if promo_code.current_uses >= promo_code.max_uses:
                             message = "Promo code has reached its usage limit"
-                
-            return PromoCodeValidationResponseModel(
-                is_valid=False,
-                message=message,
-                discount_amount=0.0,
-                final_amount=booking_amount,
-                promo_code_id=promo_code.id,
-                remaining_uses=getattr(promo_code, 'remaining_uses', None)
-            )
+                return PromoCodeValidationResponseModel(
+                    is_valid=False,
+                    message=message,
+                    discount_amount=0.0,
+                    final_amount=booking_amount,
+                    promo_code_id=promo_code.id,
+                    remaining_uses=getattr(promo_code, 'remaining_uses', None)
+                )
             # Calculate discount
             discount_amount = 0.0
             if promo_code.discount_type == "percentage":
@@ -143,9 +141,10 @@ class PromoCodeService:
             elif promo_code.discount_type == "fixed":
                 discount_amount = min(promo_code.discount_value or 0.0, booking_amount)
             final_amount = max(0.0, booking_amount - discount_amount)
+            message = "Promo code is valid"
             return PromoCodeValidationResponseModel(
                 is_valid=True,
-                message="Promo code is valid",
+                message=message,
                 discount_amount=discount_amount,
                 discount_percentage=promo_code.discount_value if promo_code.discount_type == "percentage" else None,
                 final_amount=final_amount,

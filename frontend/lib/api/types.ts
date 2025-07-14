@@ -175,7 +175,7 @@ export interface CreateBlogData {
   excerpt: string;
   author: string;
   coverImage: string;
-  tags: string[];
+  // tags removed
   category: string;
   publishedAt?: string;
 }

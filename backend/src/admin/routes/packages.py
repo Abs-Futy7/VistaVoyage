@@ -37,7 +37,6 @@ async def get_packages_stats(
             limit=1,  # We only need the totals
             active_only=False
         )
-        
         # Get active packages count
         active_result = await package_service.get_packages(
             session=session,
@@ -45,7 +44,6 @@ async def get_packages_stats(
             limit=1,
             active_only=True
         )
-        
         # Get featured packages count
         featured_result = await package_service.get_packages(
             session=session,
@@ -53,13 +51,14 @@ async def get_packages_stats(
             limit=1000,  # Get all to count featured
             active_only=False
         )
-        
-        featured_count = len([p for p in featured_result.packages if p.is_featured])
-        
+        featured_count = len([
+            p for p in featured_result["packages"]
+            if (isinstance(p, dict) and p.get("is_featured")) or getattr(p, "is_featured", False)
+        ])
         return {
-            "total_packages": result.total,
-            "active_packages": active_result.total,
-            "inactive_packages": result.total - active_result.total,
+            "total_packages": result["total"],
+            "active_packages": active_result["total"],
+            "inactive_packages": result["total"] - active_result["total"],
             "featured_packages": featured_count
         }
     except Exception as e:

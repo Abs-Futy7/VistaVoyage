@@ -221,21 +221,7 @@ export default function AdminBlogManagePage() {
                     <p className="text-sm text-gray-600 line-clamp-3">{blog.excerpt}</p>
                   )}
 
-                  {/* Tags */}
-                  {blog.tags && blog.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {blog.tags.slice(0, 3).map((tag, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                      {blog.tags.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{blog.tags.length - 3} more
-                        </Badge>
-                      )}
-                    </div>
-                  )}
+                  {/* Tags removed */}
 
                   {/* Author and Date */}
                   <div className="flex items-center justify-between text-sm text-gray-500">

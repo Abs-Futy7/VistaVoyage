@@ -45,7 +45,6 @@ interface BlogFormData {
   content: string;
   excerpt: string;
   category: string;
-  tags: string;
   cover_image: File | null;
 }
 
@@ -68,7 +67,6 @@ export default function UserBlogsPage() {
     content: '',
     excerpt: '',
     category: '',
-    tags: '',
     cover_image: null
   });
 
@@ -115,7 +113,6 @@ export default function UserBlogsPage() {
         content: formData.content,
         excerpt: formData.excerpt || undefined,
         category: formData.category,
-        tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean) : undefined,
         cover_image: formData.cover_image || undefined
       };
 
@@ -147,7 +144,6 @@ export default function UserBlogsPage() {
         content: formData.content,
         excerpt: formData.excerpt || undefined,
         category: formData.category,
-        tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean) : undefined,
         cover_image: formData.cover_image || undefined
       };
 
@@ -224,7 +220,6 @@ export default function UserBlogsPage() {
       content: '',
       excerpt: '',
       category: '',
-      tags: '',
       cover_image: null
     });
   };
@@ -236,7 +231,6 @@ export default function UserBlogsPage() {
       content: blog.content,
       excerpt: blog.excerpt || '',
       category: blog.category,
-      tags: blog.tags ? blog.tags.join(', ') : '',
       cover_image: null
     });
     setIsEditDialogOpen(true);
@@ -421,22 +415,7 @@ export default function UserBlogsPage() {
                     <p className="text-sm text-gray-600 line-clamp-3">{blog.excerpt}</p>
                   )}
 
-                  {/* Tags */}
-                  {blog.tags && blog.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {blog.tags.slice(0, 3).map((tag, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          <Tag className="h-2 w-2 mr-1" />
-                          {tag}
-                        </Badge>
-                      ))}
-                      {blog.tags.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{blog.tags.length - 3} more
-                        </Badge>
-                      )}
-                    </div>
-                  )}
+                  {/* Tags removed */}
 
                   {/* Date */}
                   <div className="flex items-center text-sm text-gray-500">
@@ -634,15 +613,7 @@ function BlogForm({ formData, setFormData, onSubmit, loading, submitText }: Blog
         />
       </div>
 
-      <div>
-        <Label htmlFor="tags">Tags (comma-separated)</Label>
-        <Input
-          id="tags"
-          value={formData.tags}
-          onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-          placeholder="travel, adventure, tips"
-        />
-      </div>
+      {/* Tags input removed */}
 
       <div>
         <Label htmlFor="cover_image">Cover Image</Label>
