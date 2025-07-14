@@ -7,7 +7,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { Upload, X, Plus } from 'lucide-react';
 
 interface PackageFormData {
@@ -39,13 +38,6 @@ interface PackageFormProps {
   onCancel: () => void;
   isLoading: boolean;
 }
-
-const difficultyLevels = [
-  { value: 'easy', label: 'Easy' },
-  { value: 'moderate', label: 'Moderate' },
-  { value: 'challenging', label: 'Challenging' },
-  { value: 'expert', label: 'Expert' }
-];
 
 export const AdminPackageForm: React.FC<PackageFormProps> = ({
   initialData,

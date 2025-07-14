@@ -36,14 +36,11 @@ function BlogCard({ blog }: { blog: Blog }) {
         <span className="absolute top-4 left-4 bg-blue-600 text-white text-xs font-medium px-3 py-1 rounded-xl z-20 shadow-xl">
           {category}
         </span>
-        <button className="absolute top-4 right-4 text-white hover:text-yellow-500 transition-colors z-20">
-          <BsBookmark className="h-5 w-5" />
-        </button>
       </div>
       
       {/* Content section */}
       <div className="p-5 flex-grow">
-        <h3 className="text-xl font-bold text-gray-800 mb-3 leading-tight line-clamp-2 font-headline">
+        <h3 className="text-3xl font-bold text-blue-900 mb-3 leading-tight line-clamp-2 font-[Inter] tracking-tight">
           {title}
         </h3>
         <p className="text-sm text-gray-600 mb-4 leading-relaxed line-clamp-3">

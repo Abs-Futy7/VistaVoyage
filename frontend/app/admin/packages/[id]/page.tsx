@@ -441,13 +441,6 @@ export default function PackageDetailsPage({ params }: PackageDetailsPageProps) 
                 </div>
               )}
 
-              {packageData.trip_type && (
-                <div>
-                  <span className="text-sm text-gray-600">Trip Type:</span>
-                  <p className="font-medium">{packageData.trip_type.name}</p>
-                </div>
-              )}
-
               {packageData.offer && (
                 <div>
                   <span className="text-sm text-gray-600">Offer:</span>

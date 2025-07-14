@@ -147,9 +147,7 @@ function ProfilePage() {
                 <h2 className="text-3xl font-headline font-semibold text-foreground">{user?.full_name || 'Loading...'}</h2>
                 <p className="text-muted-foreground">{user?.email || 'Loading...'}</p>
                 <p className="text-muted-foreground">{user?.phone || "No phone number provided"}</p>
-                <button className="mt-4 flex items-center text-primary hover:text-primary/80 transition-colors cursor-pointer bg-blue-200 px-3 py-2 rounded-lg border border-blue-300 hover:bg-blue-300/50">
-                    <Edit3 className="mr-2 h-4 w-4 " /> Change Profile Picture
-                </button>
+               
             </div>
         </div>
         

@@ -2,11 +2,11 @@ import Image from "next/image";
 import React from "react";
 import { Button } from "./ui/moving-border";
 import Link from "next/link";
+import HeroExperience from "./HeroExperience";
 
 function Hero() {
   return (
     <section className="font-[Bebas_Neue] relative h-[calc(100vh-5rem)] min-h-[500px] flex items-center justify-center text-center text-white overflow-hidden">
-      
       <Image
         src="/images/bg1.jpg"
         alt="Background"
@@ -16,9 +16,25 @@ function Hero() {
       />
       <div className="absolute inset-0 bg-black/50 z-10"></div>
       <div className="relative z-20 container mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="font-[Bebas_Neue] text-4xl sm:text-5xl md:text-8xl font-headline font-normal mb-6 drop-shadow-lg bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
-          Unforgetable Journeys Await <br />The Adventurer
-        </h1>
+        <div className="relative inline-block">
+          <h1 className="font-[Bebas_Neue] text-4xl sm:text-5xl md:text-8xl font-headline font-normal mb-6 drop-shadow-lg bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
+            Unforgetable Journeys Await <br />
+            The Adventurer
+          </h1>
+            <div
+            className="
+              hidden
+              lg:block
+              absolute
+              lg:top-[-20px] lg:left-[-50px] lg:w-[160px] lg:h-[160px]
+              xl:top-[-25px] xl:left-[-60px] xl:w-[180px] xl:h-[180px]
+              pointer-events-none
+              z-10
+            "
+            >
+            <HeroExperience />
+            </div>
+        </div>
         <p className="text-lg sm:text-2xl md:text-2xl mb-10 max-w-3xl mx-auto drop-shadow-md font-extralight">
           Explore breathtaking destinations and unique travel packages curated
           just for you.

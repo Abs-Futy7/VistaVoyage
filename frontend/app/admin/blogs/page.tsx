@@ -149,9 +149,9 @@ export default function AdminBlogManagePage() {
       )}
 
       {/* Blogs Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {blogs.length === 0 ? (
-          <div className="col-span-full text-center py-12">
+          <div className="col-span-full text-center">
             <AlertCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
             <p className="text-gray-600">
               {searchTerm ? 'No blogs found matching your search.' : 'No blogs found.'}
@@ -159,121 +159,137 @@ export default function AdminBlogManagePage() {
           </div>
         ) : (
           blogs.map((blog) => (
-            <Card key={blog.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+            <Card key={blog.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] bg-white border-0 shadow-lg">
               {/* Cover Image */}
-              <div className="h-48 bg-gradient-to-br from-blue-50 to-purple-50 relative">
-                {blog.cover_image ? (
-                  <img 
-                    src={blog.cover_image} 
-                    alt={blog.title}
-                    className="w-full h-full object-cover"
-                  />
+              <div className="h-full bg-gradient-to-br from-blue-50 to-purple-50 relative overflow-hidden">
+              {blog.cover_image ? (
+                <img 
+                  src={blog.cover_image} 
+                  alt={blog.title}
+                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                />
+              ) : (
+                <div className="bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 w-full h-full flex items-center justify-center">
+                <FileText className="h-16 w-16 text-white opacity-60 drop-shadow-lg" />
+                </div>
+              )}
+              
+              {/* Overlay Gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+              
+              {/* Status Badge */}
+              <div className="absolute top-3 left-3 z-10">
+                <Badge 
+                variant={getStatusColor(blog.status)}
+                className="bg-white/90 backdrop-blur-sm text-gray-800 border-0 shadow-md font-medium"
+                >
+                {blog.status.charAt(0).toUpperCase() + blog.status.slice(1)}
+                </Badge>
+              </div>
+
+              {/* Featured Badge */}
+              {blog.is_featured && (
+                <div className="absolute top-3 right-3 z-10">
+                <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 shadow-md">
+                  <Star className="h-3 w-3 mr-1" />
+                  Featured
+                </Badge>
+                </div>
+              )}
+
+              {/* Copy ID Button */}
+              <div className="absolute bottom-3 right-3 z-10">
+                <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => copyBlogId(blog.id)}
+                className="h-8 w-8 p-0 bg-white/90 backdrop-blur-sm hover:bg-white border-0 shadow-md"
+                title="Copy Blog ID"
+                >
+                {copiedBlogId === blog.id ? (
+                  <Check className="h-3 w-3 text-green-600" />
                 ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
-                    <FileText className="h-12 w-12 text-white opacity-50" />
-                  </div>
+                  <Copy className="h-3 w-3 text-gray-600" />
                 )}
-                
-                {/* Status Badge */}
-                <div className="absolute top-3 left-3">
-                  <Badge variant={getStatusColor(blog.status)}>
-                    {blog.status}
-                  </Badge>
-                </div>
-
-                {/* Featured Badge */}
-                {blog.is_featured && (
-                  <div className="absolute top-3 right-3">
-                    <Badge variant="default" className="bg-yellow-500">
-                      <Star className="h-3 w-3 mr-1" />
-                      Featured
-                    </Badge>
-                  </div>
-                )}
-
-                {/* Copy ID Button */}
-                <div className="absolute bottom-3 right-3">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => copyBlogId(blog.id)}
-                    className="h-8 w-8 p-0"
-                    title="Copy Blog ID"
-                  >
-                    {copiedBlogId === blog.id ? (
-                      <Check className="h-3 w-3 text-green-600" />
-                    ) : (
-                      <Copy className="h-3 w-3" />
-                    )}
-                  </Button>
-                </div>
+                </Button>
+              </div>
               </div>
 
               {/* Content */}
               <CardContent className="p-4">
-                <div className="space-y-3">
-                  <div>
-                    <h3 className="font-semibold text-lg line-clamp-2">{blog.title}</h3>
-                    <p className="text-sm text-gray-500 mt-1">{blog.category}</p>
-                  </div>
-
-                  {blog.excerpt && (
-                    <p className="text-sm text-gray-600 line-clamp-3">{blog.excerpt}</p>
-                  )}
-
-                  {/* Tags removed */}
-
-                  {/* Author and Date */}
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <Avatar className="h-6 w-6 mr-2">
-                        <AvatarFallback className="text-xs">
-                          {blog.author_id.slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span>{blog.author_id}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      <span>{formatDate(blog.created_at)}</span>
-                    </div>
-                  </div>
+              <div className="space-y-3">
+                <div>
+                <h3 className="font-bold text-lg line-clamp-2 text-gray-800 mb-2 leading-tight">{blog.title}</h3>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                  {blog.category}
+                  </Badge>
                 </div>
+                </div>
+
+                {blog.excerpt && (
+                <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">{blog.excerpt}</p>
+                )}
+
+                {/* Author and Date */}
+                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-6 w-6 ring-2 ring-blue-100">
+                  <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-blue-600 text-white font-semibold">
+                    {blog.author_id.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs text-gray-600 font-medium truncate">
+                  {blog.author_id.length > 8 ? blog.author_id.substring(0, 8) + '...' : blog.author_id}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  <Calendar className="h-3 w-3" />
+                  <span>{formatDate(blog.created_at)}</span>
+                </div>
+                </div>
+              </div>
               </CardContent>
 
               {/* Actions */}
               <div className="px-4 pb-4">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleToggleBlogStatus(blog.id)}
-                    disabled={actionLoading === blog.id}
-                    className="flex-1"
-                  >
-                    {actionLoading === blog.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : blog.status === 'published' ? (
-                      <Eye className="h-4 w-4" />
-                    ) : (
-                      'Publish'
-                    )}
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteBlog(blog.id, blog.title)}
-                    disabled={actionLoading === blog.id}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    {actionLoading === blog.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
+              <div className="flex items-center gap-2">
+                <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleToggleBlogStatus(blog.id)}
+                disabled={actionLoading === blog.id}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white border-0 hover:from-blue-700 hover:to-blue-600 transition-all duration-200 shadow-sm hover:shadow-md h-9"
+                >
+                {actionLoading === blog.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : blog.status === 'published' ? (
+                  <>
+                  <Eye className="h-4 w-4 mr-1" />
+                  Published
+                  </>
+                ) : (
+                  <>
+                  <Eye className="h-4 w-4 mr-1" />
+                  Publish
+                  </>
+                )}
+                </Button>
+                
+                <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDeleteBlog(blog.id, blog.title)}
+                disabled={actionLoading === blog.id}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 h-9 w-9 p-0"
+                >
+                {actionLoading === blog.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                </Button>
+              </div>
               </div>
             </Card>
           ))

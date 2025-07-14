@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -24,6 +23,7 @@ import {
 import { AdminPromoCode } from '@/lib/api/services/admin';
 import { promoCodeService } from '@/lib/api/services/promocode';
 import AdminForm, { FormField } from '@/components/ui/admin-form';
+import { Card } from '@/components/ui/card';
 
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -41,10 +41,28 @@ export default function AdminPromoCodesPage() {
   });
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Check authentication on component mount
+  useEffect(() => {
+    const adminToken = localStorage.getItem('admin_access_token');
+    if (!adminToken) {
+      toast.error('Please login as admin to access this page');
+      window.location.href = '/admin/login';
+      return;
+    }
+  }, []);
+
   // Fetch promo codes (list)
   const fetchPromoCodes = async () => {
     try {
       setLoading(true);
+      
+      // Debug authentication status
+      const adminToken = localStorage.getItem('admin_access_token');
+      console.log('Admin token available:', !!adminToken);
+      if (adminToken) {
+        console.log('Admin token preview:', adminToken.substring(0, 20) + '...');
+      }
+      
       const response = await promoCodeService.getPromoCodes();
       setPromoCodes(
         (response.promo_codes || []).map((promo: any) => ({
@@ -67,8 +85,20 @@ export default function AdminPromoCodesPage() {
       }));
       setError(null);
     } catch (err: any) {
-      setError(err.message || 'Failed to fetch promo codes');
-      toast.error('Failed to load promo codes');
+      console.error('Fetch promo codes error:', err);
+      
+      // Handle authentication errors specifically
+      if (err.status === 403 || err.message?.includes('Not authenticated')) {
+        setError('Authentication failed. Please login as admin.');
+        toast.error('Please login as admin to access promo codes');
+        // Redirect to admin login if not authenticated
+        setTimeout(() => {
+          window.location.href = '/admin/login';
+        }, 2000);
+      } else {
+        setError(err.message || 'Failed to fetch promo codes');
+        toast.error('Failed to load promo codes');
+      }
     } finally {
       setLoading(false);
     }
@@ -474,107 +504,109 @@ export default function AdminPromoCodesPage() {
       </div>
 
       {/* Search and Create */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex gap-4 justify-between">
-            <form onSubmit={handleSearch} className="flex gap-4 flex-1">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search promo codes by code or offer ID..."
-                  value={searchTerm}
-                  onChange={(e) => search(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Button type="submit" disabled={loading}>
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Search'}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="flex gap-4 justify-between">
+          <form onSubmit={handleSearch} className="flex gap-4 flex-1">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search promo codes by code or offer ID..."
+                value={searchTerm}
+                onChange={(e) => search(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button type="submit" disabled={loading}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Search'}
+            </Button>
+          </form>
+          
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center">
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Create Promo Code
               </Button>
-            </form>
-            
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="flex items-center">
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Create Promo Code
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Create New Promo Code</DialogTitle>
-                </DialogHeader>
-                <AdminForm
-                  title=""
-                  fields={formFields}
-                  data={createFormData}
-                  onChange={handleCreateFormChange}
-                  onSubmit={handleCreatePromoCode}
-                  submitText="Create Promo Code"
-                  loading={loading}
-                />
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardContent>
-      </Card>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create New Promo Code</DialogTitle>
+              </DialogHeader>
+              <AdminForm
+                title=""
+                fields={formFields}
+                data={createFormData}
+                onChange={handleCreateFormChange}
+                onSubmit={handleCreatePromoCode}
+                submitText="Create Promo Code"
+                loading={loading}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
 
       {/* Error Display */}
       {error && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center text-red-600">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              <span>{error}</span>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center text-red-600">
+            <AlertCircle className="h-4 w-4 mr-2" />
+            <span>{error}</span>
+          </div>
+        </div>
       )}
 
       {/* Promo Codes Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {promoCodes.length === 0 ? (
           <div className="col-span-full text-center py-12">
-            <AlertCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <Ticket className="h-12 w-12 mx-auto text-gray-400 mb-4" />
             <p className="text-gray-600">
               {searchTerm ? 'No promo codes found matching your search.' : 'No promo codes found.'}
             </p>
           </div>
         ) : (
           promoCodes.map((promoCode: AdminPromoCode) => (
-            <Card key={promoCode.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+            <Card key={promoCode.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] bg-white border-0 shadow-lg">
               {/* Header */}
-              <div className="h-24 bg-gradient-to-br from-purple-50 to-pink-50 relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
-                  <Ticket className="h-8 w-8 text-white opacity-50" />
+              <div className="h-48 bg-gradient-to-br from-purple-50 to-pink-50 relative overflow-hidden">
+                <div className="bg-gradient-to-br from-purple-400 via-purple-500 to-pink-500 w-full h-full flex items-center justify-center">
+                  <Ticket className="h-16 w-16 text-white opacity-60 drop-shadow-lg" />
                 </div>
                 
+                {/* Overlay Gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                
                 {/* Status Badge */}
-                <div className="absolute top-3 left-3">
-                  <Badge variant={promoCode.is_active ? 'default' : 'secondary'}>
+                <div className="absolute top-3 left-3 z-10">
+                  <Badge 
+                    variant={promoCode.is_active ? 'default' : 'secondary'}
+                    className="bg-white/90 backdrop-blur-sm text-gray-800 border-0 shadow-md font-medium"
+                  >
                     {promoCode.is_active ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
 
                 {/* Copy ID Button */}
-                <div className="absolute top-3 right-3">
+                <div className="absolute top-3 right-3 z-10">
                   <Button
                     variant="secondary"
                     size="sm"
                     onClick={() => copyPromoCodeId(promoCode.id)}
-                    className="h-8 w-8 p-0"
+                    className="h-8 w-8 p-0 bg-white/90 backdrop-blur-sm hover:bg-white border-0 shadow-md"
                     title="Copy Promo Code ID"
                   >
                     {copiedPromoCodeId === promoCode.id ? (
                       <Check className="h-3 w-3 text-green-600" />
                     ) : (
-                      <Copy className="h-3 w-3" />
+                      <Copy className="h-3 w-3 text-gray-600" />
                     )}
                   </Button>
                 </div>
 
                 {/* Usage Limit Badge */}
-                <div className="absolute bottom-3 left-3">
-                  <Badge variant="default" className="bg-blue-600">
+                <div className="absolute bottom-3 left-3 z-10">
+                  <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 shadow-md">
                     <Users className="h-3 w-3 mr-1" />
                     {promoCode.usage_limit ? `Limit: ${promoCode.usage_limit}` : 'Unlimited'}
                   </Badge>
@@ -582,11 +614,11 @@ export default function AdminPromoCodesPage() {
               </div>
 
               {/* Content */}
-              <CardContent className="p-4">
+              <div className="p-4">
                 <div className="space-y-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-lg font-mono">{promoCode.code}</h3>
+                      <h3 className="font-bold text-lg line-clamp-2 text-gray-800 mb-2 leading-tight font-mono">{promoCode.code}</h3>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -614,15 +646,17 @@ export default function AdminPromoCodesPage() {
                       <Users className="h-3 w-3 mr-2" />
                       <span>Usage: {promoCode.used_count || 0}/{promoCode.usage_limit || 'unlimited'}</span>
                     </div>
-                    {/* Linked offer display removed */}
                   </div>
 
                   {/* Date */}
-                  <div className="text-xs text-gray-500">
-                    Created: {formatDate(promoCode.created_at)}
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <Calendar className="h-3 w-3" />
+                      <span>{formatDate(promoCode.created_at)}</span>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
+              </div>
 
               {/* Actions */}
               <div className="px-4 pb-4">
@@ -632,7 +666,7 @@ export default function AdminPromoCodesPage() {
                     size="sm"
                     onClick={() => handleEditPromoCode(promoCode)}
                     disabled={actionLoading === promoCode.id}
-                    className="flex-1"
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white border-0 hover:from-blue-700 hover:to-blue-600 transition-all duration-200 shadow-sm hover:shadow-md h-9"
                   >
                     <Edit className="h-4 w-4 mr-1" />
                     Edit
@@ -643,19 +677,14 @@ export default function AdminPromoCodesPage() {
                     size="sm"
                     onClick={() => handleTogglePromoCodeStatus(promoCode.id)}
                     disabled={actionLoading === promoCode.id}
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300 transition-all duration-200 h-9 w-9 p-0"
                   >
                     {actionLoading === promoCode.id ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : promoCode.is_active ? (
-                      <>
-                        <ToggleRight className="h-4 w-4 mr-1" />
-                        Active
-                      </>
+                      <ToggleRight className="h-4 w-4" />
                     ) : (
-                      <>
-                        <ToggleLeft className="h-4 w-4 mr-1" />
-                        Inactive
-                      </>
+                      <ToggleLeft className="h-4 w-4" />
                     )}
                   </Button>
                   
@@ -664,7 +693,7 @@ export default function AdminPromoCodesPage() {
                     size="sm"
                     onClick={() => handleDeletePromoCode(promoCode.id, promoCode.code)}
                     disabled={actionLoading === promoCode.id}
-                    className="text-red-600 hover:text-red-700"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 h-9 w-9 p-0"
                   >
                     {actionLoading === promoCode.id ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -681,20 +710,18 @@ export default function AdminPromoCodesPage() {
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
-                Page {pagination.page} of {pagination.totalPages}
-              </div>
-              <div className="flex gap-2">
-                {/* Pagination is not supported, so just show disabled buttons */}
-                <Button variant="outline" disabled>Previous</Button>
-                <Button variant="outline" disabled>Next</Button>
-              </div>
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              Page {pagination.page} of {pagination.totalPages}
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex gap-2">
+              {/* Pagination is not supported, so just show disabled buttons */}
+              <Button variant="outline" disabled>Previous</Button>
+              <Button variant="outline" disabled>Next</Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Edit Promo Code Dialog */}
