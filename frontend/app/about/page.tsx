@@ -61,9 +61,6 @@ export default function AboutPage() {
                       height={120}
                       className="rounded-full object-cover shadow-lg mx-auto"
                     />
-                    <div className="absolute -bottom-2 -right-2 bg-blue-500 rounded-full p-2 left-1/2 transform translate-x-8">
-                      <Star className="h-4 w-4 text-white" />
-                    </div>
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">Abu Bakar Siddique</h3>
                   <div className="flex flex-wrap justify-center gap-2 mb-4">
@@ -106,9 +103,6 @@ export default function AboutPage() {
                       height={120}
                       className="rounded-full object-cover shadow-lg mx-auto"
                     />
-                    <div className="absolute -bottom-2 -right-2 bg-green-500 rounded-full p-2 left-1/2 transform translate-x-8">
-                      <Star className="h-4 w-4 text-white" />
-                    </div>
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">H.M. Mehedi Hasan</h3>
                   <div className="flex flex-wrap justify-center gap-2 mb-4">
