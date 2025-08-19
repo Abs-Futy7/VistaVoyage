@@ -52,13 +52,6 @@ function Faq() {
             <p className="text-center text-gray-600">No FAQs available at the moment. Please check back later.</p>
           )}
         </div>
-
-        <div className="mt-12 text-center">
-            <h2 className="text-2xl font-headline font-semibold text-gray-800 mb-3">Can't find an answer?</h2>
-            <p className="text-gray-600 mb-6">
-                Our support team is ready to help. Please visit our <span className="text-blue-600 hover:underline">Contact Page</span>.
-            </p>
-        </div>
       </div>
   )
 }

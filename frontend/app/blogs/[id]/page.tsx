@@ -180,10 +180,10 @@ function FullBlogPage({ params }: { params: Promise<{ id: string }> }) {
                 <Avatar className="h-8 w-8 mr-2 border-2 border-white">
                   <AvatarImage src="/images/avatar.jpg" />
                   <AvatarFallback className="bg-blue-600 text-white">
-                    TW
+                    {blog.author_name ? blog.author_name.split(' ').map(n => n[0]).join('').toUpperCase() : 'AU'}
                   </AvatarFallback>
                 </Avatar>
-                <span>Travel Writer</span>
+                <span>{blog.author_name || 'Unknown Author'}</span>
               </div>
               
               <div className="flex items-center">

@@ -60,14 +60,41 @@ class BlogService:
             "total_pages": (total + limit - 1) // limit if total else 0
         }
     
-    async def get_blog_by_id(self, session: AsyncSession, blog_id: str) -> Optional[Blog]:
-        """Get a single blog by ID"""
+    async def get_blog_by_id_raw(self, session: AsyncSession, blog_id: str) -> Optional[Blog]:
+        """Get a single blog by ID without author name (for internal operations)"""
         try:
             # Convert string to UUID
             blog_uuid = uuid.UUID(blog_id)
             query = select(Blog).where(Blog.id == blog_uuid)
             result = await session.exec(query)
             return result.first()
+        except ValueError:
+            # Invalid UUID format
+            return None
+    async def get_blog_by_id(self, session: AsyncSession, blog_id: str) -> Optional[dict]:
+        """Get a single blog by ID with author name"""
+        from src.auth.models import User
+        
+        try:
+            # Convert string to UUID
+            blog_uuid = uuid.UUID(blog_id)
+            
+            # Query with join to get author name
+            query = select(Blog, User.full_name).join(User, Blog.author_id == User.uid).where(Blog.id == blog_uuid)
+            result = await session.exec(query)
+            blog_row = result.first()
+            
+            if not blog_row:
+                return None
+            
+            blog, author_name = blog_row
+            
+            # Convert to dict and add author_name
+            blog_dict = blog.dict() if hasattr(blog, 'dict') else dict(blog)
+            blog_dict['author_name'] = author_name
+            
+            return blog_dict
+            
         except ValueError:
             # Invalid UUID format
             return None
@@ -108,8 +135,8 @@ class BlogService:
     ) -> Optional[Blog]:
         """Update an existing blog post"""
         
-        # Get existing blog
-        blog = await self.get_blog_by_id(session, blog_id)
+        # Get existing blog using raw method
+        blog = await self.get_blog_by_id_raw(session, blog_id)
         if not blog:
             return None
         
@@ -139,7 +166,7 @@ class BlogService:
     async def delete_blog(self, session: AsyncSession, blog_id: str) -> bool:
         """Delete a blog post"""
         
-        blog = await self.get_blog_by_id(session, blog_id)
+        blog = await self.get_blog_by_id_raw(session, blog_id)
         if not blog:
             return False
         
@@ -158,7 +185,7 @@ class BlogService:
         from ..models.blog import BlogStatus
         from datetime import datetime
         
-        blog = await self.get_blog_by_id(session, blog_id)
+        blog = await self.get_blog_by_id_raw(session, blog_id)
         if not blog:
             return None
 

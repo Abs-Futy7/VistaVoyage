@@ -47,23 +47,23 @@ async def get_public_blogs(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@blogs_router.get("/blogs/{blog_id}", response_model=BlogResponseModel)
+@blogs_router.get("/blogs/{blog_id}")
 async def get_blog_by_id(
     blog_id: str,
     session: AsyncSession = Depends(get_session),
 ):
     """Get a specific published blog by ID"""
     try:
-        blog = await blog_service.get_blog_by_id(session, blog_id)
+        blog_data = await blog_service.get_blog_by_id(session, blog_id)
         
-        if not blog:
+        if not blog_data:
             raise HTTPException(status_code=404, detail="Blog not found")
         
         # Only show published blogs to public
-        if blog.status != BlogStatus.PUBLISHED:
+        if blog_data.get('status') != BlogStatus.PUBLISHED.value:
             raise HTTPException(status_code=404, detail="Blog not found")
         
-        return BlogResponseModel.model_validate(blog)
+        return blog_data
     except HTTPException:
         raise
     except Exception as e:
@@ -179,13 +179,13 @@ async def update_user_blog(
     """Update a blog post by authenticated user (only their own blogs)"""
     try:
         # Get the blog first
-        blog = await blog_service.get_blog_by_id(session, blog_id)
+        blog_data = await blog_service.get_blog_by_id(session, blog_id)
         
-        if not blog:
+        if not blog_data:
             raise HTTPException(status_code=404, detail="Blog not found")
         
         # Check if user owns this blog
-        if blog.author_id != current_user.uid:
+        if blog_data.get('author_id') != current_user.uid:
             raise HTTPException(status_code=403, detail="You can only update your own blogs")
         
         # Parse tags from comma-separated string
@@ -232,13 +232,13 @@ async def delete_user_blog(
     """Delete a blog post by authenticated user (only their own blogs)"""
     try:
         # Get the blog first
-        blog = await blog_service.get_blog_by_id(session, blog_id)
+        blog_data = await blog_service.get_blog_by_id(session, blog_id)
         
-        if not blog:
+        if not blog_data:
             raise HTTPException(status_code=404, detail="Blog not found")
         
         # Check if user owns this blog
-        if blog.author_id != current_user.uid:
+        if blog_data.get('author_id') != current_user.uid:
             raise HTTPException(status_code=403, detail="You can only delete your own blogs")
         
         success = await blog_service.delete_blog(session, blog_id)
@@ -262,13 +262,13 @@ async def toggle_user_blog_publish(
     """Toggle publish status of user's blog (draft <-> published)"""
     try:
         # Get the blog first
-        blog = await blog_service.get_blog_by_id(session, blog_id)
+        blog_data = await blog_service.get_blog_by_id(session, blog_id)
         
-        if not blog:
+        if not blog_data:
             raise HTTPException(status_code=404, detail="Blog not found")
         
         # Check if user owns this blog
-        if blog.author_id != current_user.uid:
+        if blog_data.get('author_id') != current_user.uid:
             raise HTTPException(status_code=403, detail="You can only publish your own blogs")
         
         updated_blog = await blog_service.toggle_publish_status(session, blog_id)
@@ -292,16 +292,16 @@ async def get_user_blog_by_id(
 ):
     """Get a specific blog by ID (user's own blog, any status)"""
     try:
-        blog = await blog_service.get_blog_by_id(session, blog_id)
+        blog_data = await blog_service.get_blog_by_id(session, blog_id)
         
-        if not blog:
+        if not blog_data:
             raise HTTPException(status_code=404, detail="Blog not found")
         
         # Check if user owns this blog
-        if blog.author_id != current_user.uid:
+        if blog_data.get('author_id') != current_user.uid:
             raise HTTPException(status_code=403, detail="You can only view your own blogs")
         
-        return BlogResponseModel.model_validate(blog)
+        return BlogResponseModel.model_validate(blog_data)
         
     except HTTPException:
         raise
