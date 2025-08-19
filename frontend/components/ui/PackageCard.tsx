@@ -3,7 +3,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { BiMapPin } from 'react-icons/bi';
 import { FaCalendarDays } from 'react-icons/fa6';
-import { BsStar } from 'react-icons/bs';
 
 // Define the package info type
 interface PackageInfo {
@@ -14,7 +13,6 @@ interface PackageInfo {
   imageUrl: string;
   imageHint?: string;
   price: number;
-  rating: number;
 }
 
 
@@ -24,16 +22,8 @@ interface PackageCardProps {
 function PackageCard({ packageInfo }: PackageCardProps) {
   const [imgSrc, setImgSrc] = useState(packageInfo.imageUrl);
   
-  // Check if URL is definitely invalid and use fallback immediately
-  const isInvalidUrl = (url: string) => {
-    return url.includes('tywqqefmllgseuvdvoia.supabase.co') || 
-           url.includes('example.com');
-  };
-
-  // Only use fallback for URLs we know are definitely invalid
-  // Let other URLs try to load and fall back on error
-  const shouldSkipLoading = isInvalidUrl(packageInfo.imageUrl);
-  const effectiveImageUrl = shouldSkipLoading ? '/images/travel-placeholder.svg' : imgSrc;
+  // Use the image URL directly, let error handling deal with invalid URLs
+  const effectiveImageUrl = imgSrc || '/images/travel-placeholder.svg';
 
   const handleImageError = () => {
     console.log(`PackageCard: Image failed to load: ${packageInfo.imageUrl}, using fallback`);
@@ -51,16 +41,16 @@ function PackageCard({ packageInfo }: PackageCardProps) {
           alt={packageInfo.title}
           width={600}
           height={400}
-          className="w-full h-48 object-cover"
+          className="w-full h-56 object-cover"
           onError={handleImageError}
         />
       </div>
       {/* Content Section */}
-      <div className="p-4 flex-grow bg-gradient-to-t from-white to-blue-200">
-        <h3 className="text-4xl font-[Bebas_Neue] mb-2 tracking-wide h-14 overflow-hidden text-gray-700">
+      <div className="p-6 flex-grow bg-gradient-to-t from-white to-blue-200">
+        <h3 className="text-3xl font-[Bebas_Neue] mb-3 tracking-wide min-h-[4rem] leading-tight text-gray-700">
           {packageInfo.title}
         </h3>
-        <div className="text-sm text-gray-600 space-y-1.5">
+        <div className="text-sm text-gray-600 space-y-2">
           <div className="flex items-center">
             <BiMapPin className="h-4 w-4 mr-2 text-gray-600" />
             <span>{packageInfo.destination}</span>
@@ -69,14 +59,10 @@ function PackageCard({ packageInfo }: PackageCardProps) {
             <FaCalendarDays className="h-4 w-4 mr-2 text-gray-600" />
             <span>{packageInfo.duration}</span>
           </div>
-          <div className="flex items-center">
-            <BsStar className="h-4 w-4 mr-2 text-yellow-500 fill-yellow-500" />
-            <span>{packageInfo.rating.toFixed(1)} / 5.0</span>
-          </div>
         </div>
       </div>
       {/* Footer Section */}
-      <div className="p-4 flex justify-between items-center border-t">
+      <div className="p-6 flex justify-between items-center border-t">
         <div>
           <span className="text-lg font-bold text-blue-600">TK {packageInfo.price.toLocaleString()}</span>
           <span className="text-xs text-gray-500"> /person</span>

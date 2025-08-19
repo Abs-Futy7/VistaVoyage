@@ -1,8 +1,9 @@
+'use client';
+
 import Image from "next/image";
 import React from "react";
 import { Button } from "./ui/moving-border";
 import Link from "next/link";
-import HeroExperience from "./HeroExperience";
 
 function Hero() {
   return (
@@ -22,7 +23,8 @@ function Hero() {
             Unforgetable Journeys Await <br />
             The Adventurer
           </h1>
-            <div
+          {/* 3D Animation temporarily disabled to prevent HMR errors */}
+          <div
             className="
               hidden
               lg:block
@@ -32,9 +34,12 @@ function Hero() {
               pointer-events-none
               z-10
             "
-            >
-            <HeroExperience />
+          >
+            {/* Placeholder for 3D airplane - can be re-enabled when HMR issues are resolved */}
+            <div className="w-full h-full opacity-60">
+              ✈️
             </div>
+          </div>
         </div>
         <p className="text-lg sm:text-2xl md:text-2xl mb-10 max-w-3xl mx-auto drop-shadow-md font-extralight">
           Explore breathtaking destinations and unique travel packages curated

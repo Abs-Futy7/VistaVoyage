@@ -22,7 +22,8 @@ import {
   Image as ImageIcon,
   AlertCircle,
   CheckCircle,
-  ExternalLink
+  ExternalLink,
+  Tag
 } from 'lucide-react';
 
 interface PackageDetailsPageProps {
@@ -233,8 +234,8 @@ export default function PackageDetailsPage({ params }: PackageDetailsPageProps) 
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="flex items-center space-x-2">
-                  <DollarSign className="h-4 w-4 text-green-600" />
-                  <span className="font-semibold">${packageData.price}</span>
+                  <Tag className="h-4 w-4 text-green-600" />
+                  <span className="font-semibold">TK {packageData.price.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Calendar className="h-4 w-4 text-blue-600" />

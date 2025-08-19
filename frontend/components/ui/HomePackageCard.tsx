@@ -1,9 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { BiMapPin } from 'react-icons/bi';
-import { FaCalendarDays } from 'react-icons/fa6';
-import { BsStar } from 'react-icons/bs';
 
 interface HomePackageCardProps {
   id: string;
@@ -18,35 +15,20 @@ const HomePackageCard: React.FC<HomePackageCardProps> = ({
   imageUrl,
   price,
 }) => {
-  const [imgSrc, setImgSrc] = useState(imageUrl);
-  
-  // Check if URL is definitely invalid and use fallback immediately
-  const isInvalidUrl = (url: string) => {
-    return url.includes('tywqqefmllgseuvdvoia.supabase.co') || 
-           url.includes('example.com');
-  };
+  // Use the same pattern as TopDestinations - simple fallback with default image
+  const effectiveImageUrl = imageUrl || "/images/default-package.svg";
 
-  // Only use fallback for URLs we know are definitely invalid
-  const shouldSkipLoading = isInvalidUrl(imageUrl);
-  const effectiveImageUrl = shouldSkipLoading ? '/images/travel-placeholder.svg' : imgSrc;
-
-  const handleImageError = () => {
-    console.log(`HomePackageCard: Image failed to load: ${imageUrl}, using fallback`);
-    setImgSrc('/images/travel-placeholder.svg');
-  };
-
+  // Log for debugging
   console.log(`HomePackageCard ${title}: Original URL: ${imageUrl}, Effective URL: ${effectiveImageUrl}`);
 
   return (
-    <div className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow rounded-lg flex flex-col h-full border-1 border-gray-200 hover:scale-102 duration-300 bg-white">
-      <div className="p-0 relative">
+    <div className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow rounded-lg flex flex-col h-full border-1 border-gray-200 hover:scale-102 duration-300 bg-white group">
+      <div className="p-0 relative h-48">
         <Image
           src={effectiveImageUrl}
           alt={title}
-          width={600}
-          height={400}
-          className="w-full h-48 object-cover"
-          onError={handleImageError}
+          fill
+          className="object-cover transition-transform duration-500 group-hover:scale-110"
         />
       </div>
       <div className="p-4 flex-grow bg-gradient-to-t from-white to-blue-100">

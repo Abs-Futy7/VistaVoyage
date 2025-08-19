@@ -64,24 +64,30 @@ function PackageListingPage() {
     price: pkg.price,
     duration: `${pkg.duration_days} days`,
     imageUrl: (() => {
-      // Only block URLs we know are definitely invalid
-      const imageUrl = pkg.featured_image;
-      const isInvalidImage = imageUrl && (
-        imageUrl.includes('tywqqefmllgseuvdvoia.supabase.co') ||
-        imageUrl.includes('example.com')
-      );
+      // Clean up the image URL by removing trailing ? character and trimming whitespace
+      let cleanedUrl = pkg.featured_image;
       
-      // Debug logging
-      if (isInvalidImage) {
-        console.log(`Package Card: Using fallback for invalid image URL: ${imageUrl}`);
+      if (cleanedUrl) {
+        // Trim whitespace and remove trailing ? or other URL params
+        cleanedUrl = cleanedUrl.trim();
+        if (cleanedUrl.endsWith('?')) {
+          cleanedUrl = cleanedUrl.slice(0, -1);
+        }
+        // Ensure it's a valid URL string
+        cleanedUrl = cleanedUrl.trim();
+        
+        // Additional validation - check if URL looks valid
+        if (!cleanedUrl.startsWith('http')) {
+          console.log(`🔧 Package Card: Invalid URL format for ${pkg.title}: "${cleanedUrl}"`);
+          cleanedUrl = '';
+        }
       }
       
-      const finalUrl = isInvalidImage ? '/images/travel-placeholder.svg' : (imageUrl || '/images/travel-placeholder.svg');
-      console.log(`Package ${pkg.title}: ${imageUrl} -> ${finalUrl}`);
+      const finalUrl = cleanedUrl || '/images/travel-placeholder.svg';
+      console.log(`🔧 Package ${pkg.title}: Original: "${pkg.featured_image}", Cleaned: "${cleanedUrl}", Final: "${finalUrl}"`);
       return finalUrl;
     })(),
     imageHint: `${pkg.title} - ${pkg.destination?.name || (pkg.destination as Destination)?.name || 'Unknown'}`,
-    rating: 4.5, // TODO: Add rating system
   });
 
   // Fetch packages and enrich with destination

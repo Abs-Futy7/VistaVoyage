@@ -7,7 +7,7 @@ Source: https://sketchfab.com/3d-models/cartoon-plane-f312ec9f87794bdd83630a3bc6
 Title: Cartoon Plane
 */
 import { useFrame } from "@react-three/fiber";
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, Suspense } from "react";
 import { useGLTF, useAnimations } from "@react-three/drei";
 
 export function PlaneModel(props) {
@@ -18,7 +18,7 @@ export function PlaneModel(props) {
 
   
   useEffect(() => {
-    if (materials.material) {
+    if (materials && materials.material) {
       materials.material.color.set("#1E90FF");
     }
   }, [materials]);

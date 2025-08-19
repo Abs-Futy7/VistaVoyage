@@ -1,7 +1,7 @@
 "use client";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TabsContent, TabsList, TabsTrigger, Tabs } from '@/components/ui/tabs';
-import { CalendarDays, CheckCircle, Heart, MapPin, Share2, Star, Tag, Users, Loader2 } from 'lucide-react';
+import { CalendarDays, CheckCircle, MapPin, Share2, Star, Tag, Users, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -398,11 +398,6 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
                       Book Now
                       <BsArrowRight className="h-4 w-4" />
                     </button>
-                    <button className="w-full border border-gray-300 hover:border-gray-400 text-gray-700 py-3 px-6 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
-                      <Heart className="h-4 w-4" />
-                      Add to Wishlist
-                    </button>
-                    {/* Share Package button removed */}
                   </div>
                 </div>
               </CardContent>

@@ -64,19 +64,33 @@ function PopularPackages() {
   // Memoize transformed package data
   const transformedPackages = useMemo(() => {
     return packages.slice(0, 4).map((pkg) => {
-      // Only block URLs we know are definitely invalid
-      const imageUrl = pkg.featured_image;
-      const isInvalidImage = imageUrl && (
-        imageUrl.includes('tywqqefmllgseuvdvoia.supabase.co') ||
-        imageUrl.includes('example.com')
-      );
+      // Clean up the image URL by removing trailing ? character and trimming whitespace
+      let imageUrl = pkg.featured_image;
       
-      console.log(`PopularPackages: ${pkg.title} - Original: ${imageUrl}, IsInvalid: ${isInvalidImage}`);
+      if (imageUrl) {
+        // Trim whitespace and remove trailing ? or other URL params
+        imageUrl = imageUrl.trim();
+        if (imageUrl.endsWith('?')) {
+          imageUrl = imageUrl.slice(0, -1);
+        }
+        // Ensure it's a valid URL string
+        imageUrl = imageUrl.trim();
+        
+        // Additional validation - check if URL looks valid
+        if (!imageUrl.startsWith('http')) {
+          console.log(`PopularPackages: Invalid URL format for ${pkg.title}: "${imageUrl}"`);
+          imageUrl = '';
+        }
+      }
+      
+      const finalUrl = imageUrl || '/images/travel-placeholder.svg';
+      
+      console.log(`🔧 PopularPackages: ${pkg.title} - Original: "${pkg.featured_image}", Cleaned: "${imageUrl}", Final: "${finalUrl}"`);
       
       return {
         id: pkg.id,
         title: pkg.title,
-        imageUrl: isInvalidImage ? '/images/travel-placeholder.svg' : (imageUrl || '/images/travel-placeholder.svg'),
+        imageUrl: finalUrl,
         price: pkg.price,
       };
     });

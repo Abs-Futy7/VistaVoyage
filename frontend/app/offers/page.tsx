@@ -111,7 +111,7 @@ function PromoCodesPage() {
                   <p className="text-sm text-gray-700 mb-1">
                     {promo.discount_type === "percentage"
                       ? `${promo.discount_value}% off`
-                      : `$${promo.discount_value} off`}
+                      : `TK ${promo.discount_value} off`}
                   </p>
                   <p className="text-xs text-gray-500">
                     <span className="font-medium">Expires:</span>{" "}

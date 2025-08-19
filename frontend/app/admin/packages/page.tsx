@@ -21,7 +21,8 @@ import {
   AlertCircle,
   PlusCircle,
   Copy,
-  Check
+  Check,
+  Tag
 } from 'lucide-react';
 import { useAdminPackages, useAdminDestinations } from '@/hooks/useAdmin';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -367,10 +368,7 @@ export default function AdminPackagesPage() {
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(price);
+    return `TK ${price.toLocaleString()}`;
   };
 
   const formatDate = (dateString: string) => {
@@ -530,7 +528,7 @@ export default function AdminPackagesPage() {
                 {/* Price Tag */}
                 <div className="absolute bottom-3 left-3">
                   <Badge variant="default" className="bg-green-600">
-                    <DollarSign className="h-3 w-3 mr-1" />
+                    <Tag className="h-3 w-3 mr-1" />
                     {formatPrice(pkg.price)}
                   </Badge>
                 </div>

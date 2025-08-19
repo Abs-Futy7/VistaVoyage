@@ -638,7 +638,7 @@ export default function AdminPromoCodesPage() {
                       <span>
                         {promoCode.discount_type === 'percentage' 
                           ? `${promoCode.discount_value}% off` 
-                          : `$${promoCode.discount_value} off`
+                          : `TK ${promoCode.discount_value} off`
                         }
                       </span>
                     </div>
