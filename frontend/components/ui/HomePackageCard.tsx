@@ -1,6 +1,6 @@
-import React from 'react';
-import Image from 'next/image';
+import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { BiMapPin } from 'react-icons/bi';
 import { FaCalendarDays } from 'react-icons/fa6';
 import { BsStar } from 'react-icons/bs';
@@ -18,15 +18,35 @@ const HomePackageCard: React.FC<HomePackageCardProps> = ({
   imageUrl,
   price,
 }) => {
+  const [imgSrc, setImgSrc] = useState(imageUrl);
+  
+  // Check if URL is definitely invalid and use fallback immediately
+  const isInvalidUrl = (url: string) => {
+    return url.includes('tywqqefmllgseuvdvoia.supabase.co') || 
+           url.includes('example.com');
+  };
+
+  // Only use fallback for URLs we know are definitely invalid
+  const shouldSkipLoading = isInvalidUrl(imageUrl);
+  const effectiveImageUrl = shouldSkipLoading ? '/images/travel-placeholder.svg' : imgSrc;
+
+  const handleImageError = () => {
+    console.log(`HomePackageCard: Image failed to load: ${imageUrl}, using fallback`);
+    setImgSrc('/images/travel-placeholder.svg');
+  };
+
+  console.log(`HomePackageCard ${title}: Original URL: ${imageUrl}, Effective URL: ${effectiveImageUrl}`);
+
   return (
     <div className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow rounded-lg flex flex-col h-full border-1 border-gray-200 hover:scale-102 duration-300 bg-white">
       <div className="p-0 relative">
         <Image
-          src={imageUrl}
+          src={effectiveImageUrl}
           alt={title}
           width={600}
           height={400}
           className="w-full h-48 object-cover"
+          onError={handleImageError}
         />
       </div>
       <div className="p-4 flex-grow bg-gradient-to-t from-white to-blue-100">
@@ -36,7 +56,7 @@ const HomePackageCard: React.FC<HomePackageCardProps> = ({
       </div>
       <div className="p-4 flex justify-between items-center border-t">
         <div>
-          <span className="text-lg font-bold text-blue-600">${price.toLocaleString()}</span>
+          <span className="text-lg font-bold text-blue-600">TK {price.toLocaleString()}</span>
           <span className="text-xs text-gray-500"> /person</span>
         </div>
         <Link 

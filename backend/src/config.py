@@ -22,6 +22,13 @@ class Settings(BaseSettings):
     DEFAULT_ADMIN_PASSWORD: str  
     DEFAULT_ADMIN_FULL_NAME: str  
 
+    # SMTP Email settings
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = ""
+    SMTP_FROM_NAME: str = "VistaVoyage"
 
     model_config = SettingsConfigDict(
         env_file = ".env",

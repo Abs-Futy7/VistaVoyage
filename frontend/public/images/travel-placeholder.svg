@@ -1,0 +1,51 @@
+<!-- Travel-themed placeholder -->
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#87CEEB;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E0F6FF;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Sky background -->
+  <rect width="100%" height="60%" fill="url(#skyGradient)"/>
+  
+  <!-- Ground -->
+  <rect y="60%" width="100%" height="40%" fill="#90EE90"/>
+  
+  <!-- Mountains -->
+  <polygon points="0,360 200,200 400,360" fill="#8B7D6B"/>
+  <polygon points="300,360 500,180 700,360" fill="#A0522D"/>
+  <polygon points="600,360 800,220 800,360" fill="#8B7D6B"/>
+  
+  <!-- Sun -->
+  <circle cx="650" cy="150" r="50" fill="#FFD700"/>
+  
+  <!-- Clouds -->
+  <ellipse cx="200" cy="120" rx="40" ry="25" fill="white" opacity="0.8"/>
+  <ellipse cx="180" cy="110" rx="30" ry="20" fill="white" opacity="0.8"/>
+  <ellipse cx="220" cy="110" rx="35" ry="22" fill="white" opacity="0.8"/>
+  
+  <ellipse cx="500" cy="100" rx="35" ry="22" fill="white" opacity="0.8"/>
+  <ellipse cx="480" cy="90" rx="25" ry="18" fill="white" opacity="0.8"/>
+  <ellipse cx="520" cy="90" rx="30" ry="20" fill="white" opacity="0.8"/>
+  
+  <!-- Trees -->
+  <rect x="100" y="300" width="15" height="60" fill="#8B4513"/>
+  <ellipse cx="107.5" cy="300" rx="25" ry="35" fill="#228B22"/>
+  
+  <rect x="300" y="320" width="12" height="40" fill="#8B4513"/>
+  <ellipse cx="306" cy="320" rx="20" ry="25" fill="#228B22"/>
+  
+  <!-- Plane -->
+  <g transform="translate(400,80)">
+    <ellipse cx="0" cy="0" rx="30" ry="8" fill="#C0C0C0"/>
+    <rect x="-25" y="-2" width="50" height="4" fill="#C0C0C0"/>
+    <polygon points="-30,0 -35,-8 -25,-8" fill="#C0C0C0"/>
+    <rect x="10" y="-15" width="4" height="30" fill="#C0C0C0"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="400" y="500" font-family="Arial, sans-serif" font-size="24" fill="#4A5568" text-anchor="middle" font-weight="bold">Travel Package</text>
+  <text x="400" y="530" font-family="Arial, sans-serif" font-size="16" fill="#718096" text-anchor="middle">Image not available</text>
+</svg>

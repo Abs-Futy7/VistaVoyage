@@ -236,7 +236,24 @@ export const useAdminPackages = () => {
       toast.success('Package deleted successfully');
       return true;
     } catch (err: any) {
-      toast.error('Failed to delete package');
+      // Show the specific error message from the backend
+      const errorMessage = err.message || 'Failed to delete package';
+      
+      // Handle multi-line error messages by splitting on newlines and showing each line
+      if (errorMessage.includes('\n')) {
+        const lines = errorMessage.split('\n');
+        const mainMessage = lines[0];
+        const details = lines.slice(1).join('\n');
+        
+        toast.error(mainMessage, {
+          description: details,
+          duration: 8000, // Show longer for detailed messages
+        });
+      } else {
+        toast.error(errorMessage, {
+          duration: 6000,
+        });
+      }
       return false;
     }
   };

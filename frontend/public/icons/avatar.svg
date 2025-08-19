@@ -1,0 +1,22 @@
+<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="avatarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6366F1;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="url(#avatarGrad)" stroke="#E5E7EB" stroke-width="2"/>
+  
+  <!-- Head -->
+  <circle cx="32" cy="24" r="10" fill="white"/>
+  
+  <!-- Body -->
+  <ellipse cx="32" cy="45" rx="12" ry="8" fill="white"/>
+  
+  <!-- Simple face -->
+  <circle cx="29" cy="22" r="1.5" fill="#374151"/>
+  <circle cx="35" cy="22" r="1.5" fill="#374151"/>
+  <path d="M 28 26 Q 32 28 36 26" stroke="#374151" stroke-width="1.5" fill="none"/>
+</svg>

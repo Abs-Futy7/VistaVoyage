@@ -1,6 +1,6 @@
-import React from 'react';
-import Image from 'next/image';
+import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { BiMapPin } from 'react-icons/bi';
 import { FaCalendarDays } from 'react-icons/fa6';
 import { BsStar } from 'react-icons/bs';
@@ -22,16 +22,37 @@ interface PackageCardProps {
   packageInfo: PackageInfo;
 }
 function PackageCard({ packageInfo }: PackageCardProps) {
+  const [imgSrc, setImgSrc] = useState(packageInfo.imageUrl);
+  
+  // Check if URL is definitely invalid and use fallback immediately
+  const isInvalidUrl = (url: string) => {
+    return url.includes('tywqqefmllgseuvdvoia.supabase.co') || 
+           url.includes('example.com');
+  };
+
+  // Only use fallback for URLs we know are definitely invalid
+  // Let other URLs try to load and fall back on error
+  const shouldSkipLoading = isInvalidUrl(packageInfo.imageUrl);
+  const effectiveImageUrl = shouldSkipLoading ? '/images/travel-placeholder.svg' : imgSrc;
+
+  const handleImageError = () => {
+    console.log(`PackageCard: Image failed to load: ${packageInfo.imageUrl}, using fallback`);
+    setImgSrc('/images/travel-placeholder.svg');
+  };
+
+  console.log(`PackageCard ${packageInfo.title}: Original URL: ${packageInfo.imageUrl}, Effective URL: ${effectiveImageUrl}`);
+
   return (
     <div className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow rounded-lg flex flex-col h-full border-1 border-gray-200 hover:scale-102 duration-300">
       {/* Header/Image Section */}
       <div className="p-0 relative">
         <Image
-          src={packageInfo.imageUrl}
+          src={effectiveImageUrl}
           alt={packageInfo.title}
           width={600}
           height={400}
           className="w-full h-48 object-cover"
+          onError={handleImageError}
         />
       </div>
       {/* Content Section */}
@@ -57,7 +78,7 @@ function PackageCard({ packageInfo }: PackageCardProps) {
       {/* Footer Section */}
       <div className="p-4 flex justify-between items-center border-t">
         <div>
-          <span className="text-lg font-bold text-blue-600">${packageInfo.price.toLocaleString()}</span>
+          <span className="text-lg font-bold text-blue-600">TK {packageInfo.price.toLocaleString()}</span>
           <span className="text-xs text-gray-500"> /person</span>
         </div>
         <Link 

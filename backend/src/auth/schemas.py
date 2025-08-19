@@ -37,3 +37,19 @@ class UserUpdateModel(BaseModel):
     passport: Optional[str] = Field(default=None, min_length=1, max_length=255)
     is_active: Optional[bool] = None
     bookings_count: Optional[int] = None
+
+
+# Forgot Password Models
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(max_length=255)
+
+
+class VerifyOTPRequest(BaseModel):
+    email: str = Field(max_length=255)
+    otp: str = Field(min_length=6, max_length=6)
+
+
+class ResetPasswordRequest(BaseModel):
+    email: str = Field(max_length=255)
+    new_password: str = Field(min_length=4)
+    session_id: str = Field(min_length=1)

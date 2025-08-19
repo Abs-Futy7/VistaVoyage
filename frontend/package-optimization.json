@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "dev": "next dev --turbo",
+    "build": "next build",
+    "build:analyze": "ANALYZE=true next build",
+    "start": "next start",
+    "lint": "next lint",
+    "prebuild": "npm run cache:clean",
+    "cache:clean": "rimraf .next node_modules/.cache",
+    "build:fast": "next build --experimental-build-mode=compile"
+  }
+}

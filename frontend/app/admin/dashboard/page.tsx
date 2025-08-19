@@ -155,15 +155,15 @@ export default function AdminDashboard() {
           <CardContent className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Total Revenue</span>
-              <span className="text-2xl font-bold">${stats.revenue?.total?.toLocaleString() || "0.00"}</span>
+              <span className="text-2xl font-bold">TK {stats.revenue?.total?.toLocaleString() || "0.00"}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">This Month</span>
-              <span className="text-lg font-semibold">${stats.revenue?.thisMonth?.toLocaleString() || "0.00"}</span>
+              <span className="text-lg font-semibold">TK {stats.revenue?.thisMonth?.toLocaleString() || "0.00"}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Last Month</span>
-              <span className="text-lg">${stats.revenue?.lastMonth?.toLocaleString() || "0.00"}</span>
+              <span className="text-lg">TK {stats.revenue?.lastMonth?.toLocaleString() || "0.00"}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Growth</span>
@@ -223,7 +223,7 @@ export default function AdminDashboard() {
                       <p className="text-sm text-gray-600">{booking.packageTitle || booking.packageId}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold">${booking.totalAmount}</p>
+                      <p className="font-semibold">TK {booking.totalAmount}</p>
                       <Badge variant={booking.status === 'confirmed' ? 'default' : 'secondary'}>
                         {booking.status}
                       </Badge>

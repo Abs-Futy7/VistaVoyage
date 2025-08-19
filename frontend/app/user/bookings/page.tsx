@@ -228,7 +228,7 @@ function MyBookingPage() {
                           </Link>
                           {booking.packagePrice && (
                             <div className="text-sm text-gray-500">
-                              ${booking.packagePrice} per person
+                              TK {booking.packagePrice} per person
                             </div>
                           )}
                         </div>
@@ -289,7 +289,7 @@ function MyBookingPage() {
                         {(booking.payment_status === "pending" || booking.payment_status === "partially_paid") && canMakePayment(booking) && (
                           <div className="text-xs text-orange-600 mt-1">
                             {booking.payment_status === "partially_paid" ? 
-                              `$${(booking.total_amount - booking.paid_amount).toLocaleString()} remaining` : 
+                              `TK ${(booking.total_amount - booking.paid_amount).toLocaleString()} remaining` : 
                               'Payment required'
                             }
                           </div>
@@ -298,15 +298,15 @@ function MyBookingPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="text-right">
-                        <div className="font-medium">${booking.total_amount.toLocaleString()}</div>
+                        <div className="font-medium">TK {booking.total_amount.toLocaleString()}</div>
                         {booking.discount_amount > 0 && (
                           <div className="text-sm text-green-600">
-                            -${booking.discount_amount.toLocaleString()} discount
+                            -TK {booking.discount_amount.toLocaleString()} discount
                           </div>
                         )}
                         {booking.paid_amount > 0 && booking.paid_amount !== booking.total_amount && (
                           <div className="text-sm text-blue-600">
-                            ${booking.paid_amount.toLocaleString()} paid
+                            TK {booking.paid_amount.toLocaleString()} paid
                           </div>
                         )}
                       </div>
@@ -330,7 +330,7 @@ function MyBookingPage() {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            title={`Pay remaining $${(booking.total_amount - booking.paid_amount).toLocaleString()}`}
+                            title={`Pay remaining TK ${(booking.total_amount - booking.paid_amount).toLocaleString()}`}
                             onClick={() => handleMakePayment(booking.id, booking.total_amount - booking.paid_amount)}
                             className="text-green-600 hover:text-green-700"
                             disabled={processingPayment === booking.id}

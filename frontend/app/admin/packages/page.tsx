@@ -117,7 +117,7 @@ export default function AdminPackagesPage() {
     },
     {
       name: 'price',
-      label: 'Price ($)',
+      label: 'Price (TK)',
       type: 'number',
       required: true,
       placeholder: 'e.g., 1299',
@@ -323,7 +323,11 @@ export default function AdminPackagesPage() {
   };
 
   const handleDeletePackage = async (packageId: string, packageTitle: string) => {
-    if (!confirm(`Are you sure you want to delete package "${packageTitle}"? This action cannot be undone.`)) {
+    if (!confirm(
+      `Are you sure you want to delete package "${packageTitle}"?\n\n` +
+      `⚠️ This action cannot be undone.\n\n` +
+      `Note: If there are active bookings for this package, you'll need to cancel or complete them first.`
+    )) {
       return;
     }
 

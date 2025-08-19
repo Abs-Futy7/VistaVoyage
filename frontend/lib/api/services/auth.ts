@@ -111,32 +111,58 @@ export class AuthService {
     }
   }
 
-  async forgotPassword(email: string): Promise<void> {
+  async forgotPassword(email: string): Promise<{ message: string; email: string; expires_in: number }> {
     try {
-      const response = await apiClient.post(
+      const response = await apiClient.post<{ message: string; email: string; expires_in: number }>(
         API_CONFIG.ENDPOINTS.AUTH.FORGOT_PASSWORD,
         { email }
       );
 
-      if (!response.success) {
-        throw new Error(response.message || 'Failed to send reset email');
+      if (response.success && response.data) {
+        return response.data;
       }
+
+      throw new Error(response.message || 'Failed to send OTP');
     } catch (error: any) {
       console.error('Forgot password error:', error);
       throw error;
     }
   }
 
-  async resetPassword(token: string, newPassword: string): Promise<void> {
+  async verifyOTP(email: string, otp: string): Promise<{ message: string; session_id: string; email: string; expires_in: number }> {
     try {
-      const response = await apiClient.post(
-        API_CONFIG.ENDPOINTS.AUTH.RESET_PASSWORD,
-        { token, new_password: newPassword }
+      const response = await apiClient.post<{ message: string; session_id: string; email: string; expires_in: number }>(
+        API_CONFIG.ENDPOINTS.AUTH.VERIFY_OTP,
+        { email, otp }
       );
 
-      if (!response.success) {
-        throw new Error(response.message || 'Failed to reset password');
+      if (response.success && response.data) {
+        return response.data;
       }
+
+      throw new Error(response.message || 'Invalid OTP');
+    } catch (error: any) {
+      console.error('Verify OTP error:', error);
+      throw error;
+    }
+  }
+
+  async resetPassword(email: string, newPassword: string, sessionId: string): Promise<{ message: string; email: string }> {
+    try {
+      const response = await apiClient.post<{ message: string; email: string }>(
+        API_CONFIG.ENDPOINTS.AUTH.RESET_PASSWORD,
+        { 
+          email, 
+          new_password: newPassword, 
+          session_id: sessionId 
+        }
+      );
+
+      if (response.success && response.data) {
+        return response.data;
+      }
+
+      throw new Error(response.message || 'Failed to reset password');
     } catch (error: any) {
       console.error('Reset password error:', error);
       throw error;

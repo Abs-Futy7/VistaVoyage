@@ -10,9 +10,10 @@ function Hero() {
       <Image
         src="/images/bg1.jpg"
         alt="Background"
-        layout="fill"
-        objectFit="cover"
+        fill
+        style={{ objectFit: 'cover' }}
         className="absolute inset-0 z-0"
+        priority
       />
       <div className="absolute inset-0 bg-black/50 z-10"></div>
       <div className="relative z-20 container mx-auto px-4 sm:px-6 lg:px-8">

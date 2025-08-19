@@ -129,7 +129,7 @@ export const AdminPackageForm: React.FC<PackageFormProps> = ({
                 </div>
                 
                 <div>
-                  <Label htmlFor="price">Price (USD) *</Label>
+                  <Label htmlFor="price">Price (TK) *</Label>
                   <Input
                     id="price"
                     type="number"

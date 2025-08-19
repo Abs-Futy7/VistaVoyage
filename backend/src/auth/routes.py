@@ -1,11 +1,16 @@
 from fastapi import APIRouter, Depends,status
-from src.auth.schemas import UserCreateModel, UserModel , UserLoginModel, UserUpdateModel
+from src.auth.schemas import UserCreateModel, UserModel , UserLoginModel, UserUpdateModel, ForgotPasswordRequest, VerifyOTPRequest, ResetPasswordRequest
 
 from .service import UserService
 from src.db.main import get_session
 from sqlmodel.ext.asyncio.session import AsyncSession
 from fastapi.exceptions import HTTPException
-from .utils import create_access_token, decode_token, verify_password, generate_hash_password
+from .utils import (
+    create_access_token, decode_token, verify_password, generate_hash_password,
+    generate_otp, store_otp, get_stored_otp, delete_otp,
+    store_password_reset_session, verify_password_reset_session, delete_password_reset_session,
+    send_otp_email, send_password_reset_confirmation_email
+)
 from datetime import timedelta , datetime, timezone
 from fastapi.responses import JSONResponse
 from .dependencies import RefreshTokenBearer,AccessTokenBearer
@@ -14,6 +19,8 @@ from src.auth.models import User
 import uuid
 from uuid import UUID 
 from sqlmodel import select
+import logging
+import logging
 
 
 
@@ -212,3 +219,181 @@ async def update_user_profile(
             "updated_at": updated_user.updated_at.isoformat() if updated_user.updated_at else None
         }
     }
+
+
+# Forgot Password Flow
+@auth_router.post('/forgot-password')
+async def forgot_password(
+    request: ForgotPasswordRequest,
+    session: AsyncSession = Depends(get_session)
+):
+    """Send OTP to user's email for password reset"""
+    try:
+        # Check if user exists
+        user = await user_service.get_user_by_email(request.email, session)
+        if not user:
+            # For security, don't reveal if email exists or not
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={
+                    "message": "If this email is registered, you will receive an OTP shortly.",
+                    "email": request.email
+                }
+            )
+        
+        # Generate and store OTP
+        otp = generate_otp()
+        await store_otp(request.email, otp)
+        
+        # Send OTP email
+        email_sent = send_otp_email(request.email, otp, user.full_name)
+        
+        if not email_sent:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to send OTP email. Please try again later."
+            )
+        
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={
+                "message": "OTP sent to your email. Please check your inbox.",
+                "email": request.email,
+                "expires_in": 300  # 5 minutes
+            }
+        )
+        
+    except Exception as e:
+        logging.error(f"Forgot password error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while processing your request."
+        )
+
+
+@auth_router.post('/verify-otp')
+async def verify_otp(
+    request: VerifyOTPRequest,
+    session: AsyncSession = Depends(get_session)
+):
+    """Verify OTP and return session token for password reset"""
+    try:
+        # Get stored OTP
+        stored_otp = await get_stored_otp(request.email)
+        
+        # Debug logging
+        logging.info(f"OTP verification - Email: {request.email}")
+        logging.info(f"OTP verification - Provided OTP: '{request.otp}' (type: {type(request.otp)})")
+        logging.info(f"OTP verification - Stored OTP: '{stored_otp}' (type: {type(stored_otp)})")
+        
+        if not stored_otp:
+            logging.warning(f"No OTP found for email: {request.email}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="OTP has expired or is invalid. Please request a new one."
+            )
+        
+        # Verify OTP - ensure both are strings and strip whitespace
+        provided_otp = str(request.otp).strip()
+        stored_otp_clean = str(stored_otp).strip()
+        
+        logging.info(f"OTP comparison - Provided: '{provided_otp}', Stored: '{stored_otp_clean}'")
+        
+        if provided_otp != stored_otp_clean:
+            logging.warning(f"OTP mismatch for {request.email}: provided '{provided_otp}' != stored '{stored_otp_clean}'")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid OTP. Please try again."
+            )
+        
+        # Check if user exists
+        user = await user_service.get_user_by_email(request.email, session)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found."
+            )
+        
+        # Generate session ID for password reset
+        session_id = str(uuid.uuid4())
+        await store_password_reset_session(request.email, session_id)
+        
+        # Delete the used OTP
+        await delete_otp(request.email)
+        
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={
+                "message": "OTP verified successfully. You can now reset your password.",
+                "session_id": session_id,
+                "email": request.email,
+                "expires_in": 600  # 10 minutes to reset password
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Verify OTP error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while verifying OTP."
+        )
+
+
+@auth_router.post('/reset-password')
+async def reset_password(
+    request: ResetPasswordRequest,
+    session: AsyncSession = Depends(get_session)
+):
+    """Reset user password using session ID from OTP verification"""
+    try:
+        # Verify password reset session
+        is_valid = await verify_password_reset_session(request.email, request.session_id)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired session. Please start the password reset process again."
+            )
+        
+        # Get user
+        user = await user_service.get_user_by_email(request.email, session)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found."
+            )
+        
+        # Hash new password
+        new_password_hash = generate_hash_password(request.new_password)
+        
+        # Update user password
+        user.password_hash = new_password_hash
+        user.updated_at = datetime.now()  # Use timezone-naive datetime for database
+        
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
+        
+        # Delete password reset session
+        await delete_password_reset_session(request.email)
+        
+        # Send confirmation email
+        send_password_reset_confirmation_email(request.email, user.full_name)
+        
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={
+                "message": "Password reset successfully. You can now login with your new password.",
+                "email": request.email
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Reset password error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while resetting password."
+        )

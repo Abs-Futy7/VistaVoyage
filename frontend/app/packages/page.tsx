@@ -9,7 +9,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, Loader2, Package, X, MapPin, Filter } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import PackageCard from "@/components/ui/PackageCard";
 import { packageService, PublicPackage, PackageSearchFilters } from "@/lib/api/services/packages";
 import { destinationService, Destination } from '@/lib/api/services/destinations';
@@ -63,7 +63,23 @@ function PackageListingPage() {
       : (pkg.destination ? `${(pkg.destination as Destination).name}, ${(pkg.destination as Destination).country}` : 'Unknown destination'),
     price: pkg.price,
     duration: `${pkg.duration_days} days`,
-    imageUrl: pkg.featured_image || '/images/default-package.jpg',
+    imageUrl: (() => {
+      // Only block URLs we know are definitely invalid
+      const imageUrl = pkg.featured_image;
+      const isInvalidImage = imageUrl && (
+        imageUrl.includes('tywqqefmllgseuvdvoia.supabase.co') ||
+        imageUrl.includes('example.com')
+      );
+      
+      // Debug logging
+      if (isInvalidImage) {
+        console.log(`Package Card: Using fallback for invalid image URL: ${imageUrl}`);
+      }
+      
+      const finalUrl = isInvalidImage ? '/images/travel-placeholder.svg' : (imageUrl || '/images/travel-placeholder.svg');
+      console.log(`Package ${pkg.title}: ${imageUrl} -> ${finalUrl}`);
+      return finalUrl;
+    })(),
     imageHint: `${pkg.title} - ${pkg.destination?.name || (pkg.destination as Destination)?.name || 'Unknown'}`,
     rating: 4.5, // TODO: Add rating system
   });
@@ -225,10 +241,10 @@ function PackageListingPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="any">Any Price</SelectItem>
-                    <SelectItem value="<500">Under $500</SelectItem>
-                    <SelectItem value="500-1000">$500 - $1000</SelectItem>
-                    <SelectItem value="1000-2000">$1000 - $2000</SelectItem>
-                    <SelectItem value=">2000">Over $2000</SelectItem>
+                    <SelectItem value="<500">Under TK 500</SelectItem>
+                    <SelectItem value="500-1000">TK 500 - TK 1000</SelectItem>
+                    <SelectItem value="1000-2000">TK 1000 - TK 2000</SelectItem>
+                    <SelectItem value=">2000">Over TK 2000</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -289,9 +305,13 @@ function PackageListingPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {packages.map((packageItem) => (
-                  <PackageCard key={packageItem.id} packageInfo={transformPackageForCard(packageItem)} />
-                ))}
+                {packages.map((packageItem) => {
+                  const transformedPackage = transformPackageForCard(packageItem);
+                  console.log('Rendering package:', transformedPackage.title, 'Image URL:', transformedPackage.imageUrl);
+                  return (
+                    <PackageCard key={packageItem.id} packageInfo={transformedPackage} />
+                  );
+                })}
               </div>
               
               {/* Pagination */}

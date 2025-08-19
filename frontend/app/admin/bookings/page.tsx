@@ -157,7 +157,7 @@ function AdminBookingManagePage() {
                           'N/A'
                         }
                       </td>
-                      <td className="py-4 font-medium">${booking.total_amount?.toLocaleString() || 0}</td>
+                      <td className="py-4 font-medium">TK {booking.total_amount?.toLocaleString() || 0}</td>
                       <td className="py-4">
                         <Badge
                           variant="outline"

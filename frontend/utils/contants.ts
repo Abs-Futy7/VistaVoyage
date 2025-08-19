@@ -364,7 +364,7 @@ export const specialOffers = [
 
 export const promoCodes = [
   { code: 'SUMMER2024', discount: '10% off all beach destinations', expiryDate: '2024-08-31' },
-  { code: 'EARLYBIRD', discount: '$100 off when you book 3 months in advance', expiryDate: '2024-10-15' },
+  { code: 'EARLYBIRD', discount: 'TK 100 off when you book 3 months in advance', expiryDate: '2024-10-15' },
   { code: 'FAMILYFUN', discount: 'Kids stay free on family packages', expiryDate: '2024-09-15' }
 ];
 
@@ -386,6 +386,6 @@ export const mockUserBookings = [
 export const mockAnalyticsData = [
   { title: "Total Users", value: "1,234", change: "+5% last month" },
   { title: "Total Bookings", value: "567", change: "+12% last month" },
-  { title: "Total Revenue", value: "$85,670", change: "+8% last month" },
+  { title: "Total Revenue", value: "TK 85,670", change: "+8% last month" },
   { title: "Active Packages", value: "42", change: "" },
 ];

@@ -422,6 +422,9 @@ async def delete_package(
         if not success:
             raise HTTPException(status_code=404, detail="Package not found")
         return {"message": "Package deleted successfully"}
+    except ValueError as ve:
+        # Handle business logic errors (e.g., active bookings exist)
+        raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         if isinstance(e, HTTPException):
             raise e

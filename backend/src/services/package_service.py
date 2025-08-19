@@ -6,6 +6,8 @@ from datetime import datetime
 
 from ..models.package import Package
 from ..models.package_image import PackageImage
+from ..models.package_detail_schedule import PackageDetailSchedule
+from ..models.booking import Booking, BookingStatus
 from ..schemas.package_schemas import (
     PackageCreateModel, 
     PackageUpdateModel, 
@@ -324,16 +326,66 @@ class PackageService:
     
     async def delete_package(self, session: AsyncSession, package_id: str) -> bool:
         """Delete a package and its related data (cascaded by foreign keys)"""
-        
-        package = await self.get_package_by_id(session, package_id)
-        if not package:
-            return False
-        
-        # Delete from database (cascades to related tables)
-        await session.delete(package)
-        await session.commit()
-        
-        return True
+        try:
+            # First get the package to verify it exists (this method handles UUID conversion)
+            package = await self.get_package_by_id(session, package_id)
+            if not package:
+                return False
+            
+            # Check if there are any active bookings for this package
+            booking_query = select(Booking).where(
+                Booking.package_id == package_id,
+                Booking.status.in_([BookingStatus.PENDING, BookingStatus.CONFIRMED])
+            )
+            existing_bookings = await session.exec(booking_query)
+            existing_bookings_list = existing_bookings.all()
+            
+            if existing_bookings_list:
+                # Don't allow deletion if there are active bookings
+                booking_details = []
+                for booking in existing_bookings_list:
+                    booking_details.append(f"Booking ID: {booking.id} (Status: {booking.status})")
+                
+                raise ValueError(
+                    f"Cannot delete package. There are {len(existing_bookings_list)} active booking(s) for this package. "
+                    f"Please cancel or complete these bookings first:\n" + "\n".join(booking_details)
+                )
+            
+            # Delete related records in the correct order
+            
+            # 1. Delete package images
+            image_query = select(PackageImage).where(PackageImage.package_id == package_id)
+            images = await session.exec(image_query)
+            for image in images.all():
+                await session.delete(image)
+            
+            # 2. Delete package detail schedule
+            schedule_query = select(PackageDetailSchedule).where(PackageDetailSchedule.package_id == package_id)
+            schedules = await session.exec(schedule_query)
+            for schedule in schedules.all():
+                await session.delete(schedule)
+            
+            # 3. Delete completed/cancelled bookings (allow deletion of historical records)
+            historical_booking_query = select(Booking).where(
+                Booking.package_id == package_id,
+                Booking.status.in_([BookingStatus.COMPLETED, BookingStatus.CANCELLED, BookingStatus.REFUNDED])
+            )
+            historical_bookings = await session.exec(historical_booking_query)
+            for booking in historical_bookings.all():
+                await session.delete(booking)
+            
+            # 4. Finally delete the package itself
+            await session.delete(package)
+            await session.commit()
+            return True
+            
+        except ValueError as ve:
+            # Business logic error (e.g., active bookings exist)
+            await session.rollback()
+            raise ve
+        except Exception as e:
+            await session.rollback()
+            raise e
     
     async def toggle_active_status(self, session: AsyncSession, package_id: str) -> Optional[Package]:
         """Toggle the active status of a package"""

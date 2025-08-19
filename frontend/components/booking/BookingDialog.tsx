@@ -67,7 +67,7 @@ export function BookingDialog({
       if (response.success && response.data) {
         setPromoValidation(response.data);
         if (response.data.valid) {
-          toast.success(`Promo code applied! You save $${response.data.discount_amount}`);
+          toast.success(`Promo code applied! You save TK ${response.data.discount_amount}`);
         } else {
           toast.error(response.data.message || 'Invalid promo code');
         }
@@ -139,7 +139,7 @@ export function BookingDialog({
           {/* Package Info */}
           <div className="bg-blue-50 p-4 rounded-lg">
             <h3 className="font-semibold text-blue-900">{packageTitle}</h3>
-            <p className="text-blue-700">${packagePrice} per person</p>
+            <p className="text-blue-700">TK {packagePrice} per person</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -220,7 +220,7 @@ export function BookingDialog({
                 {promoValidation && promoValidation.valid && (
                   <div className="flex items-center gap-2 text-green-600 text-sm bg-green-50 p-2 rounded">
                     <CheckCircle className="h-4 w-4" />
-                    <span>Promo code applied! You save ${promoValidation.discount_amount}</span>
+                    <span>Promo code applied! You save TK {promoValidation.discount_amount}</span>
                   </div>
                 )}
                 
@@ -236,18 +236,18 @@ export function BookingDialog({
             {/* Price Summary */}
             <div className="bg-gray-50 p-4 rounded-lg space-y-2">
               <div className="flex justify-between">
-                <span>Base Price ({formData.numberOfPeople} × ${packagePrice})</span>
+                <span>Base Price ({formData.numberOfPeople} × TK {packagePrice})</span>
                 <span>${baseTotal}</span>
               </div>
               {promoValidation?.valid && (
                 <div className="flex justify-between text-green-600">
                   <span>Discount</span>
-                  <span>-${promoValidation.discount_amount}</span>
+                  <span>-TK {promoValidation.discount_amount}</span>
                 </div>
               )}
               <div className="flex justify-between font-semibold text-lg pt-2 border-t">
                 <span>Total</span>
-                <span>${finalAmount}</span>
+                <span>TK {finalAmount}</span>
               </div>
             </div>
 

@@ -219,7 +219,7 @@ export default function AdminPromoCodesPage() {
       required: true,
       options: [
         { value: 'percentage', label: 'Percentage (%)' },
-        { value: 'fixed', label: 'Fixed Amount ($)' }
+        { value: 'fixed', label: 'Fixed Amount (TK)' }
       ]
     },
     {
@@ -227,7 +227,7 @@ export default function AdminPromoCodesPage() {
       label: 'Discount Value',
       type: 'number',
       required: true,
-      placeholder: 'Enter discount value (e.g., 20 for 20% or 50 for $50)',
+      placeholder: 'Enter discount value (e.g., 20 for 20% or 50 for TK 50)',
       min: 0,
       step: 0.01
     },

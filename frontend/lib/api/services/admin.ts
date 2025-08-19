@@ -743,11 +743,18 @@ export class AdminService {
       );
 
       if (!response.success) {
-        throw new Error('Failed to delete package');
+        throw new Error(response.message || 'Failed to delete package');
       }
     } catch (error: any) {
       console.error('Delete package error:', error);
-      throw error;
+      // Extract the detailed error message from the backend response
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      } else if (error.message) {
+        throw new Error(error.message);
+      } else {
+        throw new Error('Failed to delete package');
+      }
     }
   }
 

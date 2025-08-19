@@ -1,5 +1,6 @@
 import { API_CONFIG, REQUEST_TIMEOUT } from './config';
 import { ApiResponse, ApiError } from './types';
+import { apiCache } from '../cache/apiCache';
 
 // Token management
 export const tokenManager = {
@@ -98,9 +99,18 @@ class ApiClient {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    enableCache: boolean = true
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
+    
+    // Check cache first for GET requests
+    if (enableCache && (!options.method || options.method === 'GET')) {
+      const cached = apiCache.get(endpoint, options);
+      if (cached) {
+        return cached;
+      }
+    }
     
     // Default headers - only set Content-Type if not FormData
     const headers: Record<string, string> = {
@@ -123,7 +133,8 @@ class ApiClient {
     console.log(`API Request to ${endpoint}:`, {
       hasToken: !!token,
       tokenPreview: token ? `${token.substring(0, 20)}...` : 'No token',
-      endpoint
+      endpoint,
+      cached: false
     });
     
     if (token) {
@@ -161,7 +172,14 @@ class ApiClient {
             // Retry the original request with new admin token
             headers['Authorization'] = `Bearer ${tokenManager.getAdminAccessToken()}`;
             const retryResponse = await fetch(url, { ...config, headers });
-            return this.handleResponse<T>(retryResponse);
+            const result = await this.handleResponse<T>(retryResponse);
+            
+            // Cache successful GET responses
+            if (enableCache && (!options.method || options.method === 'GET') && result.success) {
+              apiCache.set(endpoint, result, options, 5 * 60 * 1000); // 5 minutes
+            }
+            
+            return result;
           } else {
             // Admin refresh failed, clear admin tokens and trigger login dialog
             this.clearAdminTokens();
@@ -174,7 +192,14 @@ class ApiClient {
             // Retry the original request with new token
             headers['Authorization'] = `Bearer ${tokenManager.getAccessToken()}`;
             const retryResponse = await fetch(url, { ...config, headers });
-            return this.handleResponse<T>(retryResponse);
+            const result = await this.handleResponse<T>(retryResponse);
+            
+            // Cache successful GET responses
+            if (enableCache && (!options.method || options.method === 'GET') && result.success) {
+              apiCache.set(endpoint, result, options, 5 * 60 * 1000); // 5 minutes
+            }
+            
+            return result;
           } else {
             // Refresh failed, clear tokens and trigger login dialog
             tokenManager.clearTokens();
@@ -188,7 +213,27 @@ class ApiClient {
         this.triggerLoginDialog('You need to login to access this feature.');
       }
 
-      return this.handleResponse<T>(response);
+      const result = await this.handleResponse<T>(response);
+      
+      // Cache successful GET responses
+      if (enableCache && (!options.method || options.method === 'GET') && result.success) {
+        let cacheTTL = 5 * 60 * 1000; // Default 5 minutes
+        
+        // Different cache times for different endpoints
+        if (endpoint.includes('/packages')) {
+          cacheTTL = 10 * 60 * 1000; // 10 minutes for packages
+        } else if (endpoint.includes('/destinations')) {
+          cacheTTL = 15 * 60 * 1000; // 15 minutes for destinations
+        } else if (endpoint.includes('/blogs')) {
+          cacheTTL = 5 * 60 * 1000; // 5 minutes for blogs
+        } else if (endpoint.includes('/bookings')) {
+          cacheTTL = 2 * 60 * 1000; // 2 minutes for bookings (more dynamic)
+        }
+        
+        apiCache.set(endpoint, result, options, cacheTTL);
+      }
+      
+      return result;
     } catch (error) {
       // Clear timeout on error
       clearTimeout(timeoutId);
@@ -363,29 +408,66 @@ class ApiClient {
       headers: headers || {},
     });
   }
+  
   async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
+    const result = await this.request<T>(endpoint, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
-    });
+    }, false); // Disable cache for POST requests
+    
+    // Invalidate related cache entries
+    this.invalidateRelatedCache(endpoint);
+    
+    return result;
   }
 
   async put<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
+    const result = await this.request<T>(endpoint, {
       method: 'PUT',
       body: data ? JSON.stringify(data) : undefined,
-    });
+    }, false); // Disable cache for PUT requests
+    
+    // Invalidate related cache entries
+    this.invalidateRelatedCache(endpoint);
+    
+    return result;
   }
 
   async patch<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
+    const result = await this.request<T>(endpoint, {
       method: 'PATCH',
       body: data ? JSON.stringify(data) : undefined,
-    });
+    }, false); // Disable cache for PATCH requests
+    
+    // Invalidate related cache entries
+    this.invalidateRelatedCache(endpoint);
+    
+    return result;
   }
 
   async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { method: 'DELETE' });
+    const result = await this.request<T>(endpoint, { 
+      method: 'DELETE' 
+    }, false); // Disable cache for DELETE requests
+    
+    // Invalidate related cache entries
+    this.invalidateRelatedCache(endpoint);
+    
+    return result;
+  }
+
+  private invalidateRelatedCache(endpoint: string): void {
+    if (endpoint.includes('/packages')) {
+      apiCache.invalidatePackages();
+    } else if (endpoint.includes('/bookings')) {
+      apiCache.invalidateBookings();
+    } else if (endpoint.includes('/blogs')) {
+      apiCache.invalidateBlogs();
+    } else if (endpoint.includes('/destinations')) {
+      apiCache.invalidateDestinations();
+    } else if (endpoint.includes('/user') || endpoint.includes('/auth')) {
+      apiCache.invalidateUser();
+    }
   }
 
   // File upload method

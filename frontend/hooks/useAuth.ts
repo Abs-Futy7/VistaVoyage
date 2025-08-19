@@ -1,48 +1,74 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { authService, User } from '@/lib/api';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const lastAuthCheck = useRef<number>(0);
+  const authCheckCache = useRef<{ authenticated: boolean; user: User | null } | null>(null);
 
-  useEffect(() => {
-    // Check authentication status on mount
-    checkAuthStatus();
+  // Memoize auth check to prevent unnecessary API calls
+  const checkAuthStatus = useCallback(async (force: boolean = false) => {
+    const now = Date.now();
+    // Only check auth every 30 seconds unless forced
+    if (!force && now - lastAuthCheck.current < 30000 && authCheckCache.current) {
+      setIsAuthenticated(authCheckCache.current.authenticated);
+      setUser(authCheckCache.current.user);
+      setIsLoading(false);
+      return;
+    }
 
-    // Listen for storage changes (login/logout events)
-    const handleStorageChange = () => {
-      checkAuthStatus();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
-  const checkAuthStatus = async () => {
     try {
       const authenticated = authService.isAuthenticated();
       setIsAuthenticated(authenticated);
 
       if (authenticated) {
-        // Fetch user profile
-        const userProfile = await authService.getProfile();
-        setUser(userProfile);
+        // Only fetch user profile if we don't have it cached or if forced
+        if (!authCheckCache.current?.user || force) {
+          const userProfile = await authService.getProfile();
+          setUser(userProfile);
+          authCheckCache.current = { authenticated, user: userProfile };
+        } else {
+          setUser(authCheckCache.current.user);
+        }
       } else {
         setUser(null);
+        authCheckCache.current = { authenticated: false, user: null };
       }
+      
+      lastAuthCheck.current = now;
     } catch (error) {
       console.error('Auth check failed:', error);
       setIsAuthenticated(false);
       setUser(null);
+      authCheckCache.current = { authenticated: false, user: null };
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // Check authentication status on mount
+    checkAuthStatus(true); // Force initial check
+
+    // Listen for storage changes (login/logout events) with debouncing
+    let timeoutId: NodeJS.Timeout;
+    const handleStorageChange = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        checkAuthStatus(true);
+      }, 100); // Debounce for 100ms
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [checkAuthStatus]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -86,12 +112,15 @@ export function useAuth() {
       await authService.logout();
       setUser(null);
       setIsAuthenticated(false);
+      authCheckCache.current = { authenticated: false, user: null };
       
       // Show success message
       console.log('✅ Successfully logged out and cleared all tokens');
       
-      // Redirect to home page after logout
+      // Use Next.js router for better performance
       if (typeof window !== 'undefined') {
+        const { useRouter } = await import('next/navigation');
+        // Force reload to clear all cached data
         window.location.href = '/';
       }
     } catch (error) {
@@ -99,6 +128,7 @@ export function useAuth() {
       // Still clear local state even if API call fails
       setUser(null);
       setIsAuthenticated(false);
+      authCheckCache.current = { authenticated: false, user: null };
       
       // Redirect to home page even if logout API fails
       if (typeof window !== 'undefined') {
@@ -128,6 +158,6 @@ export function useAuth() {
     register,
     logout,
     updateProfile,
-    refetch: checkAuthStatus
+    refetch: () => checkAuthStatus(true) // Force refresh when called
   };
 }

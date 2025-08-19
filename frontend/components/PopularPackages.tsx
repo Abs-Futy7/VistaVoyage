@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { Button } from './ui/moving-border'
 import HomePackageCard from './ui/HomePackageCard'
@@ -20,35 +20,67 @@ interface PublicPackage {
   // ...add other fields as needed
 }
 
+// Add loading skeleton component
+const PackageCardSkeleton = () => (
+  <div className="animate-pulse">
+    <div className="bg-gray-300 h-48 rounded-lg mb-4"></div>
+    <div className="bg-gray-300 h-4 rounded mb-2"></div>
+    <div className="bg-gray-300 h-4 rounded w-3/4"></div>
+  </div>
+);
+
 function PopularPackages() {
   const [packages, setPackages] = useState<PublicPackage[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchPackages = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const response = await apiClient.get<PublicPackage[] | { packages: PublicPackage[] }>(
-          '/api/v1/home/packages?page=1&limit=4'
-        )
-        // If backend returns an array directly
-        if (Array.isArray(response.data)) {
-          setPackages(response.data)
-        } else if (response.data && Array.isArray((response.data as any).packages)) {
-          setPackages((response.data as { packages: PublicPackage[] }).packages)
-        } else {
-          setPackages([])
-        }
-      } catch (e: any) {
-        setError(e.message || 'Error fetching packages')
-      } finally {
-        setLoading(false)
+  // Memoize the fetch function to prevent unnecessary re-renders
+  const fetchPackages = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await apiClient.get<PublicPackage[] | { packages: PublicPackage[] }>(
+        '/api/v1/home/packages?page=1&limit=4'
+      )
+      // If backend returns an array directly
+      if (Array.isArray(response.data)) {
+        setPackages(response.data)
+      } else if (response.data && Array.isArray((response.data as any).packages)) {
+        setPackages((response.data as { packages: PublicPackage[] }).packages)
+      } else {
+        setPackages([])
       }
+    } catch (e: any) {
+      setError(e.message || 'Error fetching packages')
+    } finally {
+      setLoading(false)
     }
-    fetchPackages()
   }, [])
+
+  useEffect(() => {
+    fetchPackages()
+  }, [fetchPackages])
+
+  // Memoize transformed package data
+  const transformedPackages = useMemo(() => {
+    return packages.slice(0, 4).map((pkg) => {
+      // Only block URLs we know are definitely invalid
+      const imageUrl = pkg.featured_image;
+      const isInvalidImage = imageUrl && (
+        imageUrl.includes('tywqqefmllgseuvdvoia.supabase.co') ||
+        imageUrl.includes('example.com')
+      );
+      
+      console.log(`PopularPackages: ${pkg.title} - Original: ${imageUrl}, IsInvalid: ${isInvalidImage}`);
+      
+      return {
+        id: pkg.id,
+        title: pkg.title,
+        imageUrl: isInvalidImage ? '/images/travel-placeholder.svg' : (imageUrl || '/images/travel-placeholder.svg'),
+        price: pkg.price,
+      };
+    });
+  }, [packages])
 
   return (
     <section className="py-12 md:py-16 bg-white">
@@ -62,20 +94,18 @@ function PopularPackages() {
           </p>
         </div>
         {loading ? (
-          <div className="text-center py-10">Loading...</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+            {[...Array(4)].map((_, index) => (
+              <PackageCardSkeleton key={index} />
+            ))}
+          </div>
         ) : error ? (
           <div className="text-center text-red-500 py-10">{error}</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-            {packages.slice(0, 4).map((pkg) => {
-                const packageInfo = {
-                id: pkg.id,
-                title: pkg.title,
-                imageUrl: pkg.featured_image || '/images/bali.png',
-                price: pkg.price,
-                };
-              return <HomePackageCard key={pkg.id} {...packageInfo} />;
-            })}
+            {transformedPackages.map((packageInfo) => (
+              <HomePackageCard key={packageInfo.id} {...packageInfo} />
+            ))}
           </div>
         )}
         <div className="text-center mt-10">

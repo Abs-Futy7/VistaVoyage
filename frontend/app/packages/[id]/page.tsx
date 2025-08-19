@@ -365,7 +365,7 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
                   <div className="text-center">
                     <div className="flex items-center justify-center gap-2">
                       <span className="text-4xl font-bold text-blue-600">
-                        ${packageDetails.price}
+                        TK {packageDetails.price}
                       </span>
                     </div>
                     <p className="text-gray-600 mt-1">per person</p>
