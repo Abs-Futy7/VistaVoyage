@@ -168,23 +168,26 @@ class PackageService:
     async def create_package(
         self,
         session: AsyncSession,
-        package_data: PackageCreateModel
+        package_data: PackageCreateModel,
+        admin_id: Optional[str] = None
     ) -> Package:
-        """Create a new package with related schedule and details"""
-        
+        """Create a new package with related schedule and details, recording the admin who created it."""
+
         # Extract normalized data for the main package
         package_dict = package_data.model_dump(exclude={
-            'duration_days', 'duration_nights', 'max_group_size', 
-            'available_from', 'available_until', 'highlights', 'itinerary', 
+            'duration_days', 'duration_nights', 'max_group_size',
+            'available_from', 'available_until', 'highlights', 'itinerary',
             'inclusions', 'exclusions', 'terms_conditions', 'image_gallery'
         })
-        
+        if admin_id:
+            package_dict['created_by'] = admin_id
+
         # Create main package
         new_package = Package(**package_dict)
         session.add(new_package)
         await session.commit()
         await session.refresh(new_package)
-        
+
         # Create combined detail/schedule with provided data
         detail_schedule_data = PackageDetailScheduleCreateModel(
             package_id=new_package.id,
@@ -204,12 +207,12 @@ class PackageService:
             print(f"Created detail/schedule for package {new_package.id}")
         except Exception as e:
             print(f"Error creating detail/schedule: {str(e)}")
-        
+
         # Create package images if provided
         if package_data.image_gallery:
             from ..services.package_image_service import package_image_service
             from ..schemas.package_image_schemas import PackageImageCreateModel
-            
+
             # Add all gallery images to the package
             for i, image_url in enumerate(package_data.image_gallery):
                 image_data = PackageImageCreateModel(
@@ -224,7 +227,7 @@ class PackageService:
                     print(f"Created image {i} for package {new_package.id}")
                 except Exception as e:
                     print(f"Error creating image {i}: {str(e)}")
-        
+
         # Return the refreshed package with all relations and formatted data
         package = await self.get_package_by_id(session, str(new_package.id))
         return await self.get_package_detail(session, str(new_package.id))

@@ -23,7 +23,7 @@ from ...auth.models import User
 blogs_router = APIRouter()
 
 
-@blogs_router.get("/blogs", response_model=BlogListResponseModel)
+@blogs_router.get("/blogs")
 async def get_public_blogs(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(12, ge=1, le=50, description="Number of items per page"),
@@ -42,13 +42,7 @@ async def get_public_blogs(
             published_only=True  # Only show published blogs to public
         )
         
-        return BlogListResponseModel(
-            blogs=result["blogs"],
-            total=result["total"],
-            page=result["page"],
-            limit=result["limit"],
-            total_pages=result["total_pages"]
-        )
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

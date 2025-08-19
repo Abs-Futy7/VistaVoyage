@@ -11,21 +11,13 @@ if TYPE_CHECKING:
 class PackageDetailSchedule(SQLModel, table=True):
     __tablename__ = "package_detail_schedule"
 
-    id: uuid.UUID = Field(
-        default_factory=uuid.uuid4,
-        sa_column=Column(
-            pg.UUID(as_uuid=True),
-            nullable=False,
-            primary_key=True
-        )
-    )
-
     package_id: uuid.UUID = Field(
         sa_column=Column(
             pg.UUID(as_uuid=True),
             ForeignKey("packages.id", ondelete="CASCADE"),
             nullable=False,
-            unique=True
+            primary_key=True
+
         )
     )
 

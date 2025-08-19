@@ -31,7 +31,6 @@ class PackageDetailScheduleUpdateModel(BaseModel):
     available_until: Optional[datetime] = None
 
 class PackageDetailScheduleResponseModel(BaseModel):
-    id: uuid.UUID
     package_id: uuid.UUID
     highlights: Optional[str]
     itinerary: Optional[str]

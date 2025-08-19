@@ -116,38 +116,43 @@ class DestinationService:
         return DestinationResponseModel.model_validate(destination)
 
     async def create_destination(
-        self, 
-        session: AsyncSession, 
+        self,
+        session: AsyncSession,
         destination_data: DestinationCreateModel,
         featured_image: Optional[UploadFile] = None,
-        image_gallery: Optional[List[UploadFile]] = None
+        image_gallery: Optional[List[UploadFile]] = None,
+        admin_id: Optional[str] = None
     ) -> DestinationResponseModel:
-        """Create a new destination"""
+        """Create a new destination, recording the admin who created it."""
         try:
             # Handle featured image upload if provided
             featured_image_url = None
             if featured_image:
                 featured_image_url = await supabase_service.upload_destination_image(featured_image)
-            
+
             # Handle image gallery upload if provided
             image_gallery_urls = []
             if image_gallery:
                 for image in image_gallery:
                     image_url = await supabase_service.upload_destination_image(image)
                     image_gallery_urls.append(image_url)
-            
+
+            destination_kwargs = destination_data.model_dump(exclude_unset=True)
+            if admin_id:
+                destination_kwargs['created_by'] = admin_id
+
             destination = Destination(
-                **destination_data.model_dump(exclude_unset=True),
+                **destination_kwargs,
                 featured_image=featured_image_url,
                 image_gallery=image_gallery_urls if image_gallery_urls else None
             )
-            
+
             session.add(destination)
             await session.commit()
             await session.refresh(destination)
-            
+
             return DestinationResponseModel.model_validate(destination)
-            
+
         except Exception as e:
             await session.rollback()
             raise HTTPException(status_code=500, detail=f"Error creating destination: {str(e)}")

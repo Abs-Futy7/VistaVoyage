@@ -41,35 +41,8 @@ function MyBookingPage() {
     console.log('All booking keys:', Object.keys(bookings[0]));
   }
 
-  // Fallback mock data for testing if no real data
-  const mockBookings = bookings.length === 0 && !loading && !error ? [
-    {
-      id: "mock-booking-1",
-      package_id: "mock-package-1",
-      status: "pending",
-      payment_status: "pending",
-      booking_date: new Date().toISOString(),
-      total_amount: 1500,
-      paid_amount: 0,
-      discount_amount: 0,
-      packageTitle: "Amazing Beach Resort Package",
-      packagePrice: 1500
-    },
-    {
-      id: "mock-booking-2",
-      package_id: "mock-package-2",
-      status: "confirmed",
-      payment_status: "paid",
-      booking_date: new Date().toISOString(),
-      total_amount: 2000,
-      paid_amount: 2000,
-      discount_amount: 100,
-      packageTitle: "Mountain Adventure Expedition",
-      packagePrice: 2100
-    }
-  ] : [];
-
-  const displayBookings = bookings.length > 0 ? bookings : mockBookings;
+  // Only use real bookings data
+  const displayBookings = bookings;
 
   const handleStatusFilter = (status: string) => {
     setStatusFilter(status);
@@ -233,7 +206,6 @@ function MyBookingPage() {
             <Table className="min-w-full ">
               <TableHeader>
                 <TableRow className="bg-blue-100 text-blue-800 font-semibold">
-                  <TableHead>Booking ID</TableHead>
                   <TableHead>Package</TableHead>
                   <TableHead>Booking Date</TableHead>
                   <TableHead>Status</TableHead>
@@ -245,9 +217,6 @@ function MyBookingPage() {
               <TableBody>
                 {displayBookings.map((booking) => (
                   <TableRow key={booking.id}>
-                    <TableCell className="font-medium text-blue-600">
-                      #{booking.id.substring(0, 8)}...
-                    </TableCell>
                     <TableCell>
                       {booking.packageTitle ? (
                         <div>

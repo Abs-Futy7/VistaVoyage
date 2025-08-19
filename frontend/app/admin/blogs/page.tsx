@@ -236,11 +236,11 @@ export default function AdminBlogManagePage() {
                 <div className="flex items-center gap-2">
                   <Avatar className="h-6 w-6 ring-2 ring-blue-100">
                   <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-blue-600 text-white font-semibold">
-                    {blog.author_id.slice(0, 2).toUpperCase()}
+                    {blog.author_name ? blog.author_name.slice(0, 2).toUpperCase() : 'AU'}
                   </AvatarFallback>
                   </Avatar>
                   <span className="text-xs text-gray-600 font-medium truncate">
-                  {blog.author_id.length > 8 ? blog.author_id.substring(0, 8) + '...' : blog.author_id}
+                  {blog.author_name || 'Unknown'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-xs text-gray-500">

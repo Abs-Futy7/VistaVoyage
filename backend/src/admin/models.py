@@ -13,11 +13,11 @@ class Admin(SQLModel, table=True):
     __tablename__ = "admins"
     
     id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
         sa_column=Column(
-            pg.UUID,
+            pg.UUID(as_uuid=True),
             nullable=False,
-            primary_key=True,
-            default=uuid.uuid4
+            primary_key=True
         )
     )
     
@@ -53,34 +53,27 @@ class Admin(SQLModel, table=True):
     )
     
     role: str = Field(
-        default="admin",
         sa_column=Column(
             pg.VARCHAR(50),
-            nullable=False,
-            default="admin"
+            nullable=False
         )
     )
 
     is_active: bool = Field(
-        default=True,
         sa_column=Column(
             pg.BOOLEAN,
-            nullable=False,
-            default=True
+            nullable=False
         )
     )
     created_at: datetime = Field(
         sa_column=Column(
             pg.TIMESTAMP,
-            default=datetime.now,
             nullable=False
         )
     )
     updated_at: datetime = Field(
         sa_column=Column(
             pg.TIMESTAMP,
-            default=datetime.now,
-            onupdate=datetime.now,
             nullable=False
         )
     )

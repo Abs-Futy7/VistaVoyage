@@ -1,6 +1,7 @@
+
 from sqlmodel import SQLModel, Field, Column, Relationship
-from sqlalchemy import ForeignKey
 import sqlalchemy.dialects.postgresql as pg
+from sqlalchemy import UniqueConstraint, ForeignKey
 import uuid
 from datetime import datetime, date
 from typing import Optional, TYPE_CHECKING
@@ -13,6 +14,9 @@ if TYPE_CHECKING:
 class PromoCode(SQLModel, table=True):
     """Promo code model for discount codes."""
     __tablename__ = "promo_codes"
+    __table_args__ = (
+        UniqueConstraint("code", name="promo_codes_code_key"),
+    )
     
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
@@ -34,6 +38,14 @@ class PromoCode(SQLModel, table=True):
     # Removed offer_id field and offer relationship
     
     # Standalone promo code fields
+
+    created_by: uuid.UUID = Field(
+        sa_column=Column(
+            pg.UUID(as_uuid=True),
+            ForeignKey("admins.id"),
+            nullable=False
+        )
+    )
     description: Optional[str] = Field(
         default=None,
         sa_column=Column(

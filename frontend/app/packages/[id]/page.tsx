@@ -227,9 +227,23 @@ export default function PackageDetailsPage({ params }: { params: Promise<{ id: s
                       <h3 className="text-xl font-semibold">Detailed Itinerary</h3>
                       {packageDetails.itinerary ? (
                         <div className="prose max-w-none">
-                          <div dangerouslySetInnerHTML={{ 
-                            __html: packageDetails.itinerary.replace(/\n/g, '<br />') 
-                          }} />
+                          {packageDetails.itinerary
+                            .split(/(?=Day \d+:)/g)
+                            .filter(Boolean)
+                            .map((day: string, idx: number) => {
+                              const [dayTitle, ...descParts] = day.split(':');
+                              const descLines = descParts.join(':').split(/\n+/).map(l => l.trim()).filter(Boolean);
+                              return (
+                                <div key={idx} className="mb-4 p-3 rounded bg-gray-50 border">
+                                  <strong className="block text-blue-700">{dayTitle}:</strong>
+                                  <div className="block mt-1 text-gray-700">
+                                    {descLines.map((line, i) => (
+                                      <div key={i}>{line}</div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
                         </div>
                       ) : (
                         <p className="text-gray-500 italic">Detailed itinerary coming soon</p>

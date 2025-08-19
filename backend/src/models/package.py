@@ -1,6 +1,7 @@
+
 from sqlmodel import SQLModel, Field, Column, Relationship
-from sqlalchemy import ForeignKey
 import sqlalchemy.dialects.postgresql as pg
+from sqlalchemy import UniqueConstraint, ForeignKey
 import uuid
 from datetime import datetime
 from typing import Optional, List, TYPE_CHECKING
@@ -19,6 +20,9 @@ from .package_detail_schedule import PackageDetailSchedule
 class Package(SQLModel, table=True):
     """Package model for travel packages."""
     __tablename__ = "packages"
+    __table_args__ = (
+        UniqueConstraint("title", "destination_id", name="unique_title_per_destination"),
+    )
     
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
@@ -59,6 +63,14 @@ class Package(SQLModel, table=True):
         sa_column=Column(
             pg.UUID(as_uuid=True),
             ForeignKey("destinations.id"),
+            nullable=False
+        )
+    )
+
+    created_by: uuid.UUID = Field(
+        sa_column=Column(
+            pg.UUID(as_uuid=True),
+            ForeignKey("admins.id"),
             nullable=False
         )
     )

@@ -4,6 +4,7 @@ Admin dashboard routes
 from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, func
+from datetime import datetime, timedelta
 
 from ...db.main import get_session
 from ...services.booking_service import booking_service
@@ -85,23 +86,57 @@ async def get_dashboard_stats(session: AsyncSession = Depends(get_session)):
         total_revenue_decimal = sum((Decimal(str(booking.total_amount)) for booking in confirmed_bookings), Decimal('0'))
         total_revenue = float(total_revenue_decimal) if total_revenue_decimal else 0.0
         
+        now = datetime.utcnow()
+        first_day_this_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        first_day_last_month = (first_day_this_month - timedelta(days=1)).replace(day=1)
+        last_day_last_month = first_day_this_month - timedelta(seconds=1)
+
+        # This month's revenue
+        this_month_query = select(Booking).where(
+            Booking.status == 'confirmed',
+            Booking.created_at >= first_day_this_month,
+            Booking.created_at <= now
+        )
+        this_month_result = await session.exec(this_month_query)
+        this_month_revenue = float(sum((Decimal(str(b.total_amount)) for b in this_month_result.all()), Decimal('0')))
+
+        # Last month's revenue
+        last_month_query = select(Booking).where(
+            Booking.status == 'confirmed',
+            Booking.created_at >= first_day_last_month,
+            Booking.created_at <= last_day_last_month
+        )
+        last_month_result = await session.exec(last_month_query)
+        last_month_revenue = float(sum((Decimal(str(b.total_amount)) for b in last_month_result.all()), Decimal('0')))
+
+        # Revenue growth calculation
+        if last_month_revenue == 0:
+            growth = 100.0 if this_month_revenue > 0 else 0.0
+        else:
+            growth = round(((this_month_revenue - last_month_revenue) / last_month_revenue) * 100, 2)
+
         # Get recent bookings (limit 5)
         recent_bookings_result = await session.exec(
             select(Booking).order_by(Booking.created_at.desc()).limit(5)
         )
-        recent_bookings = [
-            {
+        recent_bookings_raw = recent_bookings_result.all()
+
+        # Fetch related user and package info
+        recent_bookings = []
+        for booking in recent_bookings_raw:
+            user = await session.get(User, booking.user_id)
+            package = await session.get(Package, booking.package_id)
+            recent_bookings.append({
                 "id": str(booking.id),
-                "customerName": str(booking.user_id),  # Using user_id instead of customer_name
+                "customerName": user.full_name if user else str(booking.user_id),
                 "packageId": str(booking.package_id),
+                "packageTitle": package.title if package else "",
                 "status": booking.status,
                 "totalAmount": float(booking.total_amount),
-                "guests": 1,  # Default value since guests field doesn't exist
-                "travelDate": booking.created_at.isoformat() + "Z",  # Using created_at as fallback
+                "guests": 1,
+                "travelDate": booking.created_at.isoformat() + "Z",
                 "bookingDate": booking.booking_date.isoformat() + "Z"
-            }
-            for booking in recent_bookings_result.all()
-        ]
+            })
         
         # Get recent blogs (limit 5)
         recent_blogs_result = await session.exec(
@@ -144,9 +179,9 @@ async def get_dashboard_stats(session: AsyncSession = Depends(get_session)):
             "publishedBlogs": published_blogs,
             "revenue": {
                 "total": total_revenue,
-                "thisMonth": round(total_revenue * 0.2, 2),  # Mock calculation - you can implement proper monthly calculation
-                "lastMonth": round(total_revenue * 0.16, 2),  # Mock calculation
-                "growth": 25  # Mock calculation
+                "thisMonth": round(this_month_revenue, 2),
+                "lastMonth": round(last_month_revenue, 2),
+                "growth": growth
             },
             "bookingsByStatus": booking_stats.get("bookings_by_status", {}),
             "recentBookings": recent_bookings or [],

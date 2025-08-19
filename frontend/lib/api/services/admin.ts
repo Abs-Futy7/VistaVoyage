@@ -146,6 +146,7 @@ export interface AdminBlog {
   id: string;
   title: string;
   author_id: string;
+  author_name?: string; // <-- Add this line
   excerpt?: string;
   content: string;
   category: string;

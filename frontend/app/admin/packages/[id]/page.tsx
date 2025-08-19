@@ -307,7 +307,26 @@ export default function PackageDetailsPage({ params }: PackageDetailsPageProps) 
                     <h3 className="font-semibold">Detailed Itinerary</h3>
                     <div className="prose max-w-none">
                       {packageData.itinerary ? (
-                        <div dangerouslySetInnerHTML={{ __html: packageData.itinerary.replace(/\n/g, '<br />') }} />
+                        <div>
+                          {packageData.itinerary
+                            .split(/(?=Day \d+:)/g)
+                            .filter(Boolean)
+                            .map((day: string, idx: number) => {
+                              const [dayTitle, ...descParts] = day.split(':');
+                              // Join the rest, trim, and split by newlines, filtering out empty lines
+                              const descLines = descParts.join(':').split(/\n+/).map(l => l.trim()).filter(Boolean);
+                              return (
+                                <div key={idx} className="mb-4 p-3 rounded bg-gray-50 border">
+                                  <strong className="block text-blue-700">{dayTitle}:</strong>
+                                  <div className="block mt-1 text-gray-700">
+                                    {descLines.map((line, i) => (
+                                      <div key={i}>{line}</div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
                       ) : (
                         <p className="text-gray-500 italic">No itinerary provided</p>
                       )}

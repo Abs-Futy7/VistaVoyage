@@ -1,5 +1,6 @@
 from sqlmodel import SQLModel, Field, Column, Relationship
 import sqlalchemy.dialects.postgresql as pg
+from sqlalchemy import UniqueConstraint, ForeignKey
 import uuid
 from datetime import datetime
 from typing import Optional, List, TYPE_CHECKING
@@ -11,6 +12,9 @@ if TYPE_CHECKING:
 class Destination(SQLModel, table=True):
     """Destination model for travel destinations."""
     __tablename__ = "destinations"
+    __table_args__ = (
+        UniqueConstraint("name", "city", "country", name="unique_destination_name_location"),
+    )
     
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
@@ -49,19 +53,19 @@ class Destination(SQLModel, table=True):
             nullable=True
         )
     )
+
+    created_by: uuid.UUID = Field(
+        sa_column=Column(
+            pg.UUID(as_uuid=True),
+            ForeignKey("admins.id"),
+            nullable=False
+        )
+    )
     
     best_time_to_visit: Optional[str] = Field(
         default=None,
         sa_column=Column(
             pg.VARCHAR(100),
-            nullable=True
-        )
-    )
-    
-    timezone: Optional[str] = Field(
-        default=None,
-        sa_column=Column(
-            pg.VARCHAR(50),
             nullable=True
         )
     )

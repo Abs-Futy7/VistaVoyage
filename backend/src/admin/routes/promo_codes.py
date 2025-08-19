@@ -249,31 +249,35 @@ async def create_promo_code(
         existing_result = await session.exec(existing_query)
         if existing_result.first():
             raise HTTPException(status_code=400, detail="Promo code already exists")
-        
+
         # Create new promo code
         promo_code_dict = promo_code_data.model_dump()
         # Set legacy fields for backward compatibility
         # Removed 'max_usage'
         promo_code_dict['used_count'] = 0
+        # Set created_by from admin token
+        admin_id = user.get("sub") or user.get("admin_id")
+        if admin_id:
+            promo_code_dict['created_by'] = admin_id
         promo_code = PromoCode(**promo_code_dict)
-        
+
         session.add(promo_code)
         await session.commit()
         await session.refresh(promo_code)
-        
+
         # Calculate computed fields
         current_date = datetime.utcnow().date()
         usage_count = promo_code.used_count or 0
         limit_count = promo_code.usage_limit  # Remove reference to promo_code.max_usage
         remaining_uses = None if limit_count is None else max(0, limit_count - usage_count)
-        
+
         is_valid = (
             promo_code.is_active and
             current_date >= promo_code.start_date and
             current_date <= promo_code.expiry_date and
             (limit_count is None or usage_count < limit_count)
         )
-        
+
         pc_data = {
             "id": promo_code.id,
             "code": promo_code.code,
@@ -295,9 +299,9 @@ async def create_promo_code(
             "is_valid": is_valid,
             "is_expired": current_date > promo_code.expiry_date
         }
-        
+
         return PromoCodeResponseModel(**pc_data)
-        
+
     except HTTPException:
         raise
     except Exception as e:

@@ -11,43 +11,47 @@ import uuid
 class BlogService:
     
     async def get_blogs(
-        self, 
-        session: AsyncSession, 
-        page: int = 1, 
-        limit: int = 10, 
+        self,
+        session: AsyncSession,
+        page: int = 1,
+        limit: int = 10,
         search: Optional[str] = None,
         category: Optional[str] = None,
         published_only: bool = False
     ) -> dict:
-        """Get paginated list of blogs with optional filtering"""
-        
-        # Base query
-        query = select(Blog)
-        
-        # Apply filters
+        """Get paginated list of blogs with author name included"""
+        from src.auth.models import User
+
+        # Build base query and apply filters
+        base_query = select(Blog, User.full_name).join(User, Blog.author_id == User.uid)
         if search:
-            query = query.where(Blog.title.contains(search))
-        
+            base_query = base_query.where(Blog.title.contains(search))
         if category:
-            query = query.where(Blog.category == category)
-        
+            base_query = base_query.where(Blog.category == category)
         if published_only:
             from ..models.blog import BlogStatus
-            query = query.where(Blog.status == BlogStatus.PUBLISHED)
-        
-        # Get total count
-        count_query = select(func.count(Blog.id)).select_from(query.subquery())
+            base_query = base_query.where(Blog.status == BlogStatus.PUBLISHED)
+
+        # Count query (no offset/limit/order_by)
+        count_query = select(func.count()).select_from(base_query.subquery())
         total_result = await session.exec(count_query)
         total = total_result.first()
-        
-        # Apply pagination
+        if isinstance(total, tuple):
+            total = total[0]
+
+        # Now apply pagination to a new query
         offset = (page - 1) * limit
-        query = query.offset(offset).limit(limit).order_by(Blog.created_at.desc())
-        
-        # Execute query
-        result = await session.exec(query)
-        blogs = result.all()
-        
+        paged_query = base_query.offset(offset).limit(limit).order_by(Blog.created_at.desc())
+        result = await session.exec(paged_query)
+        blog_rows = result.all()
+
+        # Build blogs list with author_name
+        blogs = []
+        for blog, author_name in blog_rows:
+            blog_dict = blog.dict() if hasattr(blog, 'dict') else dict(blog)
+            blog_dict['author_name'] = author_name
+            blogs.append(blog_dict)
+
         return {
             "blogs": blogs,
             "total": total,

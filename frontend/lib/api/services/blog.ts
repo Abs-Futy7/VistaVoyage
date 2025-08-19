@@ -11,7 +11,7 @@ export interface BackendBlog {
   status: string;
   published_at?: string;
   category: string;
-  // tags removed
+  author_name?: string; // Assuming full_name is available in backendBlog
   cover_image?: string;
   is_featured: boolean;
   created_at: string;
@@ -71,7 +71,7 @@ export const blogService = {
   convertBlogFormat: (backendBlog: BackendBlog): Blog => ({
     title: backendBlog.title,
     excerpt: backendBlog.excerpt || backendBlog.content.substring(0, 150) + "...",
-    author: "Travel Writer", // You can enhance this later with actual author data
+    author:  backendBlog.author_name || "Unknown Author", // Assuming full_name is available in backendBlog
     date: backendBlog.published_at || backendBlog.created_at,
     imageUrl: backendBlog.cover_image || "/images/blog.jpg",
     imageHint: `${backendBlog.category} travel blog`,

@@ -214,27 +214,32 @@ class PromoCodeService:
         session: Session,
         code: str,
         max_usage: Optional[int] = None,
-        is_active: bool = True
+        is_active: bool = True,
+        admin_id: Optional[str] = None
     ) -> Optional[PromoCode]:
         """
-        Create a new promo code.
+        Create a new promo code, recording the admin who created it.
         
         Args:
             session: Database session
             code: Promo code string
             max_usage: Maximum usage limit
             is_active: Whether the code is active
+            admin_id: Admin ID who created the promo code
         
         Returns:
             Created PromoCode or None if failed
         """
         try:
-            promo_code = PromoCode(
-                code=code.upper(),
-                max_usage=max_usage,
-                current_usage=0,
-                is_active=is_active
-            )
+            promo_code_kwargs = {
+                'code': code.upper(),
+                'max_usage': max_usage,
+                'current_usage': 0,
+                'is_active': is_active
+            }
+            if admin_id:
+                promo_code_kwargs['created_by'] = admin_id
+            promo_code = PromoCode(**promo_code_kwargs)
             session.add(promo_code)
             session.commit()
             session.refresh(promo_code)

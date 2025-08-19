@@ -217,7 +217,8 @@ async def create_package(
             available_until=available_until_dt
         )
         
-        new_package = await package_service.create_package(session, package_data)
+        admin_id = token_data.get("sub") or token_data.get("admin_id")
+        new_package = await package_service.create_package(session, package_data, admin_id=admin_id)
         return new_package
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=f"Invalid UUID format: {str(ve)}")

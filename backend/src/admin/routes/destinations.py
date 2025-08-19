@@ -91,6 +91,7 @@ async def create_destination(
             from ...services.supabase_service import supabase_service
             featured_image_url = await supabase_service.upload_destination_image(featured_image)
         
+        admin_id = token_data.get("sub") or token_data.get("admin_id")
         destination = Destination(
             name=name,
             country=country,
@@ -100,13 +101,14 @@ async def create_destination(
             best_time_to_visit=best_time_to_visit,
             timezone=timezone,
             featured_image=featured_image_url,
-            is_active=is_active
+            is_active=is_active,
+            created_by=admin_id
         )
-        
+
         session.add(destination)
         await session.commit()
         await session.refresh(destination)
-        
+
         return destination
     except Exception as e:
         await session.rollback()

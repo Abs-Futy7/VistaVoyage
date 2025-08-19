@@ -86,7 +86,7 @@ export class AuthService {
 
       throw new Error(response.message || 'Failed to fetch profile');
     } catch (error: any) {
-      console.error('Get profile error:', error);
+      console.error('Get profile error:', error?.message || error);
       throw error;
     }
   }
@@ -106,7 +106,7 @@ export class AuthService {
 
       throw new Error(response.message || 'Failed to update profile');
     } catch (error: any) {
-      console.error('Update profile error:', error);
+      console.error('Update profile error:', error?.message || error);
       throw error;
     }
   }
