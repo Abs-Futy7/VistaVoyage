@@ -22,6 +22,271 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
+// Invoice generation function
+const generateInvoice = (booking: any) => {
+  const invoiceWindow = window.open('', '_blank');
+  if (!invoiceWindow) {
+    toast.error('Please allow popups to download invoice');
+    return;
+  }
+
+  const invoiceHTML = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Invoice - ${booking.id}</title>
+      <style>
+        @page {
+          size: A4;
+          margin: 0.5in;
+        }
+        body {
+          font-family: Arial, sans-serif;
+          line-height: 1.3;
+          color: #333;
+          font-size: 12px;
+          margin: 0;
+          padding: 0;
+          background: white;
+        }
+        .header {
+          text-align: center;
+          border-bottom: 2px solid #3b82f6;
+          padding-bottom: 10px;
+          margin-bottom: 15px;
+        }
+        .company-name {
+          font-size: 20px;
+          font-weight: bold;
+          color: #3b82f6;
+          margin-bottom: 3px;
+        }
+        .company-tagline {
+          color: #666;
+          font-size: 11px;
+        }
+        .invoice-title {
+          font-size: 16px;
+          font-weight: bold;
+          margin: 10px 0 5px 0;
+          color: #1f2937;
+        }
+        .invoice-info {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 15px;
+        }
+        .invoice-details, .booking-details {
+          background: #f8fafc;
+          padding: 8px;
+          border-radius: 4px;
+          width: 48%;
+        }
+        .detail-row {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 4px;
+          font-size: 11px;
+        }
+        .detail-label {
+          font-weight: bold;
+          color: #4b5563;
+        }
+        .section-title {
+          margin-top: 0;
+          margin-bottom: 6px;
+          color: #374151;
+          font-size: 13px;
+        }
+        .package-info {
+          background: #eff6ff;
+          border-left: 3px solid #3b82f6;
+          padding: 10px;
+          margin: 10px 0;
+        }
+        .package-title {
+          font-size: 14px;
+          font-weight: bold;
+          color: #1e40af;
+          margin-bottom: 5px;
+        }
+        .amount-breakdown {
+          background: #f9fafb;
+          border: 1px solid #e5e7eb;
+          border-radius: 4px;
+          padding: 10px;
+          margin: 10px 0;
+        }
+        .amount-row {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 4px;
+          padding: 2px 0;
+          font-size: 11px;
+        }
+        .amount-row.total {
+          border-top: 1px solid #3b82f6;
+          padding-top: 6px;
+          margin-top: 6px;
+          font-weight: bold;
+          font-size: 13px;
+          color: #1f2937;
+        }
+        .status-badge {
+          display: inline-block;
+          padding: 2px 6px;
+          border-radius: 10px;
+          font-size: 9px;
+          font-weight: bold;
+          text-transform: uppercase;
+        }
+        .status-confirmed { background: #dcfce7; color: #166534; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-completed { background: #dbeafe; color: #1e40af; }
+        .status-cancelled { background: #fee2e2; color: #dc2626; }
+        .payment-paid { background: #dcfce7; color: #166534; }
+        .payment-pending { background: #fed7aa; color: #c2410c; }
+        .payment-partially { background: #dbeafe; color: #1e40af; }
+        .payment-section {
+          margin: 10px 0;
+        }
+        .footer {
+          margin-top: 15px;
+          padding-top: 10px;
+          border-top: 1px solid #e5e7eb;
+          text-align: center;
+          color: #6b7280;
+          font-size: 9px;
+          line-height: 1.2;
+        }
+        .print-button {
+          background: #3b82f6;
+          color: white;
+          border: none;
+          padding: 6px 12px;
+          border-radius: 3px;
+          cursor: pointer;
+          font-size: 11px;
+          margin: 5px 3px;
+        }
+        .print-button:hover {
+          background: #2563eb;
+        }
+        .button-section {
+          text-align: center;
+          margin: 10px 0;
+        }
+        @media print {
+          .print-button, .button-section { display: none !important; }
+          body { margin: 0; padding: 0; }
+          .header { margin-bottom: 10px; }
+          .invoice-info { margin-bottom: 10px; }
+          .package-info { margin: 8px 0; }
+          .amount-breakdown { margin: 8px 0; }
+          .payment-section { margin: 8px 0; }
+          .footer { margin-top: 10px; padding-top: 8px; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="company-name">VistaVoyage</div>
+        <div class="company-tagline">Your Gateway to Amazing Adventures</div>
+        <div class="invoice-title">INVOICE</div>
+      </div>
+
+      <div class="invoice-info">
+        <div class="invoice-details">
+          <h3 class="section-title">Invoice Details</h3>
+          <div class="detail-row">
+            <span class="detail-label">Invoice #:</span>
+            <span>INV-${booking.id.substring(0, 8).toUpperCase()}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Date:</span>
+            <span>${new Date().toLocaleDateString()}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Booking ID:</span>
+            <span style="font-size: 9px; word-break: break-all; line-height: 1.2;">${booking.id}</span>
+          </div>
+        </div>
+
+        <div class="booking-details">
+          <h3 class="section-title">Booking Details</h3>
+          <div class="detail-row">
+            <span class="detail-label">Booking Date:</span>
+            <span>${booking.booking_date ? new Date(booking.booking_date).toLocaleDateString() : 'N/A'}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Travelers:</span>
+            <span>${booking.number_of_travelers || 1} person(s)</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Status:</span>
+            <span class="status-badge status-${booking.status}">${booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="package-info">
+        <div class="package-title">${booking.packageTitle || 'Package Details Not Available'}</div>
+        ${booking.packagePrice ? `<div style="font-size: 11px;"><strong>Price per person:</strong> TK ${booking.packagePrice.toLocaleString()}</div>` : ''}
+      </div>
+
+      <div class="amount-breakdown">
+        <h3 class="section-title">Amount Breakdown</h3>
+        <div class="amount-row">
+          <span>Subtotal:</span>
+          <span>TK ${(booking.total_amount + booking.discount_amount).toLocaleString()}</span>
+        </div>
+        ${booking.discount_amount > 0 ? `
+        <div class="amount-row" style="color: #059669;">
+          <span>Discount Applied:</span>
+          <span>-TK ${booking.discount_amount.toLocaleString()}</span>
+        </div>
+        ` : ''}
+        <div class="amount-row total">
+          <span>Total Amount:</span>
+          <span>TK ${booking.total_amount.toLocaleString()}</span>
+        </div>
+        <div class="amount-row">
+          <span>Paid Amount:</span>
+          <span>TK ${booking.paid_amount.toLocaleString()}</span>
+        </div>
+        ${booking.paid_amount < booking.total_amount ? `
+        <div class="amount-row" style="color: #dc2626;">
+          <span>Outstanding Balance:</span>
+          <span>TK ${(booking.total_amount - booking.paid_amount).toLocaleString()}</span>
+        </div>
+        ` : ''}
+      </div>
+
+      <div class="payment-section">
+        <h3 class="section-title">Payment Status</h3>
+        <span class="status-badge payment-${booking.payment_status.replace('_', '')}">${booking.payment_status === 'partially_paid' ? 'Partially Paid' : booking.payment_status.charAt(0).toUpperCase() + booking.payment_status.slice(1)}</span>
+      </div>
+
+      <div class="button-section">
+        <button class="print-button" onclick="window.print()">Print Invoice</button>
+        <button class="print-button" onclick="window.close()">Close</button>
+      </div>
+
+      <div class="footer">
+        <p><strong>VistaVoyage</strong> | Email: support@vistavoyage.com | Phone: +880-1234-567890</p>
+        <p>Thank you for choosing VistaVoyage for your travel adventure!</p>
+        <p><em>This is a computer-generated invoice. For any queries, please contact our support team.</em></p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  invoiceWindow.document.write(invoiceHTML);
+  invoiceWindow.document.close();
+};
+
 
 function MyBookingPage() {
   const { bookings, loading, error, pagination, filterByStatus, cancelBooking, makePayment, refetch } = useBookings();
@@ -321,7 +586,13 @@ function MyBookingPage() {
                         </Link>
                         
                         {/* Download Invoice Button */}
-                        <Button variant="ghost" size="sm" title="Download Invoice">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          title="Download Invoice"
+                          onClick={() => generateInvoice(booking)}
+                          className="text-blue-600 hover:text-blue-700"
+                        >
                           <Download className="h-4 w-4" />
                         </Button>
 

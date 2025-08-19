@@ -201,7 +201,7 @@ export default function BookingDetailsPage({ params }: BookingDetailsPageProps) 
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Package Price</span>
-                <span className="font-medium">${booking.packagePrice}</span>
+                <span className="font-medium">TK {booking.packagePrice}</span>
               </div>
             </CardContent>
           </Card>
@@ -284,21 +284,21 @@ export default function BookingDetailsPage({ params }: BookingDetailsPageProps) 
             <CardContent className="space-y-4">
               <div className="flex justify-between">
                 <span className="text-gray-600">Total Amount</span>
-                <span className="font-medium">${booking.total_amount}</span>
+                <span className="font-medium">TK {booking.total_amount}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Paid Amount</span>
-                <span className="font-medium text-green-600">${booking.paid_amount}</span>
+                <span className="font-medium text-green-600">TK {booking.paid_amount}</span>
               </div>
               {booking.discount_amount > 0 && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Discount</span>
-                  <span className="font-medium text-green-600">-${booking.discount_amount}</span>
+                  <span className="font-medium text-green-600">-TK {booking.discount_amount}</span>
                 </div>
               )}
               <div className="flex justify-between">
                 <span className="text-gray-600">Outstanding</span>
-                <span className="font-medium text-red-600">${booking.total_amount - booking.paid_amount}</span>
+                <span className="font-medium text-red-600">TK {booking.total_amount - booking.paid_amount}</span>
               </div>
             </CardContent>
           </Card>

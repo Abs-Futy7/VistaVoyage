@@ -133,22 +133,35 @@ async def get_booking(
 ):
     """Get a specific booking by ID"""
     try:
-        booking = await booking_service.get_booking_by_id(session, booking_id)
+        # First check if booking exists and belongs to user
+        booking_check = await booking_service.get_booking_by_id(session, booking_id)
         
-        if not booking:
+        if not booking_check:
             raise HTTPException(
                 status_code=404,
                 detail="Booking not found"
             )
         
         # Check if booking belongs to current user
-        if str(booking.user_id) != str(current_user.uid):
+        if str(booking_check.user_id) != str(current_user.uid):
             raise HTTPException(
                 status_code=403,
                 detail="Access denied"
             )
         
-        return BookingResponseModel.model_validate(booking)
+        # Get detailed booking information with user and package data
+        booking_details = await booking_service.get_booking_details_for_admin(
+            session=session,
+            booking_id=booking_id
+        )
+        
+        if not booking_details:
+            raise HTTPException(
+                status_code=500,
+                detail="Error retrieving booking details"
+            )
+        
+        return BookingResponseModel.model_validate(booking_details)
         
     except HTTPException:
         raise
