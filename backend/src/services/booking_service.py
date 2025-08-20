@@ -259,6 +259,18 @@ class BookingService:
         await session.commit()
         await session.refresh(new_booking)
         
+        # Update user's booking count
+        from ..auth.models import User
+        user_statement = select(User).where(User.uid == user_id)
+        user_result = await session.exec(user_statement)
+        user = user_result.first()
+        
+        if user:
+            user.bookings_count += 1
+            session.add(user)
+            await session.commit()
+            await session.refresh(user)
+        
         return new_booking
     
     async def update_booking(
@@ -315,9 +327,24 @@ class BookingService:
         if not booking:
             return False
         
+        # Get the user ID before deleting the booking
+        user_id = booking.user_id
+        
         # Delete from database
         await session.delete(booking)
         await session.commit()
+        
+        # Update user's booking count (decrement)
+        from ..auth.models import User
+        user_statement = select(User).where(User.uid == user_id)
+        user_result = await session.exec(user_statement)
+        user = user_result.first()
+        
+        if user and user.bookings_count > 0:
+            user.bookings_count -= 1
+            session.add(user)
+            await session.commit()
+            await session.refresh(user)
         
         return True
     
@@ -452,6 +479,40 @@ class BookingService:
             stats["total_revenue"] = float(total_revenue)
         
         return stats
+
+
+    async def sync_user_booking_counts(self, session: AsyncSession) -> Dict[str, int]:
+        """Sync user booking counts with actual booking data (utility function for data integrity)"""
+        from ..auth.models import User
+        
+        # Get all users
+        users_statement = select(User)
+        users_result = await session.exec(users_statement)
+        users = users_result.all()
+        
+        updated_count = 0
+        total_users = len(users)
+        
+        for user in users:
+            # Count actual bookings for this user
+            booking_count_statement = select(func.count(Booking.id)).where(Booking.user_id == user.uid)
+            count_result = await session.exec(booking_count_statement)
+            actual_count = count_result.first() or 0
+            
+            # Update if count doesn't match
+            if user.bookings_count != actual_count:
+                user.bookings_count = actual_count
+                session.add(user)
+                updated_count += 1
+        
+        if updated_count > 0:
+            await session.commit()
+        
+        return {
+            "total_users_checked": total_users,
+            "users_updated": updated_count,
+            "message": f"Synced booking counts for {updated_count} out of {total_users} users"
+        }
 
 
 # Create singleton instance

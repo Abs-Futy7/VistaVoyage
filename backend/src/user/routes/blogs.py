@@ -78,7 +78,6 @@ async def create_user_blog(
     excerpt: Optional[str] = Form(None),
     content: str = Form(...),
     category: str = Form(...),
-    tags: Optional[str] = Form(None),  # Comma-separated string
     cover_image: Optional[UploadFile] = File(None),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user)
@@ -86,9 +85,6 @@ async def create_user_blog(
     """Create a new blog post by authenticated user"""
     try:
         # Parse tags from comma-separated string
-        tags_list = None
-        if tags:
-            tags_list = [tag.strip() for tag in tags.split(",") if tag.strip()]
         
         # Create blog data with current user as author
         blog_data = BlogCreateModel(
@@ -97,7 +93,6 @@ async def create_user_blog(
             excerpt=excerpt,
             content=content,
             category=category,
-            tags=tags_list,
             status="draft",  # User blogs start as draft
             is_featured=False  # Users can't create featured blogs
         )

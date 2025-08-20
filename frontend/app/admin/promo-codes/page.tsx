@@ -557,7 +557,7 @@ export default function AdminPromoCodesPage() {
       )}
 
       {/* Promo Codes Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {promoCodes.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <Ticket className="h-12 w-12 mx-auto text-gray-400 mb-4" />
@@ -567,48 +567,32 @@ export default function AdminPromoCodesPage() {
           </div>
         ) : (
           promoCodes.map((promoCode: AdminPromoCode) => (
-            <Card key={promoCode.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] bg-white border-0 shadow-lg">
+            <div
+              key={promoCode.id}
+              className="bg-white rounded-lg border border-yellow-200 overflow-hidden shadow-md hover:shadow-lg transition-all duration-300"
+            >
               {/* Header */}
-              <div className="h-48 bg-gradient-to-br from-purple-50 to-pink-50 relative overflow-hidden">
-                <div className="bg-gradient-to-br from-purple-400 via-purple-500 to-pink-500 w-full h-full flex items-center justify-center">
-                  <Ticket className="h-16 w-16 text-white opacity-60 drop-shadow-lg" />
-                </div>
-                
-                {/* Overlay Gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                
-                {/* Status Badge */}
-                <div className="absolute top-3 left-3 z-10">
-                  <Badge 
-                    variant={promoCode.is_active ? 'default' : 'secondary'}
-                    className="bg-white/90 backdrop-blur-sm text-gray-800 border-0 shadow-md font-medium"
-                  >
-                    {promoCode.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
-
-                {/* Copy ID Button */}
-                <div className="absolute top-3 right-3 z-10">
+              <div className="p-4 border-b border-yellow-100 bg-yellow-50 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <span className="font-mono font-bold text-xl text-yellow-800">
+                    {promoCode.code}
+                  </span>
                   <Button
-                    variant="secondary"
+                    variant="ghost"
                     size="sm"
-                    onClick={() => copyPromoCodeId(promoCode.id)}
-                    className="h-8 w-8 p-0 bg-white/90 backdrop-blur-sm hover:bg-white border-0 shadow-md"
-                    title="Copy Promo Code ID"
+                    onClick={() => copyPromoCode(promoCode.code)}
+                    className="h-7 w-7 p-0 hover:bg-yellow-100 rounded-full transition-all duration-200"
+                    title="Copy Promo Code"
                   >
-                    {copiedPromoCodeId === promoCode.id ? (
-                      <Check className="h-3 w-3 text-green-600" />
-                    ) : (
-                      <Copy className="h-3 w-3 text-gray-600" />
-                    )}
+                    <Copy className="h-3.5 w-3.5 text-yellow-700" />
                   </Button>
                 </div>
-
-                {/* Usage Limit Badge */}
-                <div className="absolute bottom-3 left-3 z-10">
-                  <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 shadow-md">
-                    <Users className="h-3 w-3 mr-1" />
-                    {promoCode.usage_limit ? `Limit: ${promoCode.usage_limit}` : 'Unlimited'}
+                <div className="flex items-center gap-2">
+                  <Badge 
+                    variant={promoCode.is_active ? 'default' : 'secondary'}
+                    className={`${promoCode.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'} font-medium`}
+                  >
+                    {promoCode.is_active ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
               </div>
@@ -616,43 +600,47 @@ export default function AdminPromoCodesPage() {
               {/* Content */}
               <div className="p-4">
                 <div className="space-y-3">
-                  <div>
+                  {/* Discount Info */}
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-lg line-clamp-2 text-gray-800 mb-2 leading-tight font-mono">{promoCode.code}</h3>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyPromoCode(promoCode.code)}
-                        className="h-6 w-6 p-0"
-                        title="Copy Promo Code"
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Promo Code Details */}
-                  <div className="space-y-2">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Percent className="h-3 w-3 mr-2" />
-                      <span>
+                      <Percent className="h-4 w-4 text-blue-500" />
+                      <span className="text-sm font-medium text-gray-700">
                         {promoCode.discount_type === 'percentage' 
                           ? `${promoCode.discount_value}% off` 
                           : `TK ${promoCode.discount_value} off`
                         }
                       </span>
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Users className="h-3 w-3 mr-2" />
-                      <span>Usage: {promoCode.used_count || 0}/{promoCode.usage_limit || 'unlimited'}</span>
+                  </div>
+
+                  {/* Usage Stats */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-emerald-500" />
+                      <span className="text-sm text-gray-600">
+                        Used: {promoCode.used_count || 0}/{promoCode.usage_limit || '∞'}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Date */}
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                      <Calendar className="h-3 w-3" />
-                      <span>{formatDate(promoCode.created_at)}</span>
+                  {/* Description */}
+                  {promoCode.description && (
+                    <p className="text-xs text-gray-500 mt-2">{promoCode.description}</p>
+                  )}
+
+                  {/* Date Info */}
+                  <div className="pt-2 border-t border-gray-100">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-3 w-3 text-amber-500" />
+                      <span className="text-xs text-gray-500">
+                        <span className="font-medium">Created:</span> {formatDate(promoCode.created_at)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Calendar className="h-3 w-3 text-red-500" />
+                      <span className="text-xs text-gray-500">
+                        <span className="font-medium">Expires:</span> {formatDate(promoCode.expiry_date)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -666,10 +654,25 @@ export default function AdminPromoCodesPage() {
                     size="sm"
                     onClick={() => handleEditPromoCode(promoCode)}
                     disabled={actionLoading === promoCode.id}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 text-white border-0 hover:from-blue-700 hover:to-blue-600 transition-all duration-200 shadow-sm hover:shadow-md h-9"
+                    className="flex-1 bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-all duration-200 h-8"
                   >
-                    <Edit className="h-4 w-4 mr-1" />
+                    <Edit className="h-3 w-3 mr-1" />
                     Edit
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyPromoCodeId(promoCode.id)}
+                    disabled={actionLoading === promoCode.id}
+                    className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-50 border-gray-200 hover:border-gray-300 transition-all duration-200"
+                    title="Copy ID"
+                  >
+                    {copiedPromoCodeId === promoCode.id ? (
+                      <Check className="h-3 w-3 text-green-600" />
+                    ) : (
+                      <Copy className="h-3 w-3" />
+                    )}
                   </Button>
                   
                   <Button
@@ -677,14 +680,21 @@ export default function AdminPromoCodesPage() {
                     size="sm"
                     onClick={() => handleTogglePromoCodeStatus(promoCode.id)}
                     disabled={actionLoading === promoCode.id}
-                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300 transition-all duration-200 h-9 w-9 p-0"
+                    className={`
+                      ${promoCode.is_active 
+                        ? 'text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200 hover:border-amber-300' 
+                        : 'text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200 hover:border-green-300'
+                      }
+                      transition-all duration-200 h-8 w-8 p-0
+                    `}
+                    title={promoCode.is_active ? 'Deactivate' : 'Activate'}
                   >
                     {actionLoading === promoCode.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-3 w-3 animate-spin" />
                     ) : promoCode.is_active ? (
-                      <ToggleRight className="h-4 w-4" />
+                      <ToggleRight className="h-3 w-3" />
                     ) : (
-                      <ToggleLeft className="h-4 w-4" />
+                      <ToggleLeft className="h-3 w-3" />
                     )}
                   </Button>
                   
@@ -693,17 +703,18 @@ export default function AdminPromoCodesPage() {
                     size="sm"
                     onClick={() => handleDeletePromoCode(promoCode.id, promoCode.code)}
                     disabled={actionLoading === promoCode.id}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 h-9 w-9 p-0"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200 h-8 w-8 p-0"
+                    title="Delete"
                   >
                     {actionLoading === promoCode.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-3 w-3 animate-spin" />
                     ) : (
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3 w-3" />
                     )}
                   </Button>
                 </div>
               </div>
-            </Card>
+            </div>
           ))
         )}
       </div>

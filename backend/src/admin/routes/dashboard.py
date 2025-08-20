@@ -86,7 +86,7 @@ async def get_dashboard_stats(session: AsyncSession = Depends(get_session)):
         total_revenue_decimal = sum((Decimal(str(booking.total_amount)) for booking in confirmed_bookings), Decimal('0'))
         total_revenue = float(total_revenue_decimal) if total_revenue_decimal else 0.0
         
-        now = datetime.utcnow()
+        now = datetime.now()
         first_day_this_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         first_day_last_month = (first_day_this_month - timedelta(days=1)).replace(day=1)
         last_day_last_month = first_day_this_month - timedelta(seconds=1)
@@ -280,6 +280,22 @@ async def get_system_stats(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@dashboard_router.post("/sync-booking-counts")
+async def sync_user_booking_counts(
+    session: AsyncSession = Depends(get_session),
+    token_data: dict = Depends(admin_access_bearer)
+):
+    """Sync user booking counts with actual booking data (admin only)"""
+    try:
+        from ...services.booking_service import booking_service
+        
+        result = await booking_service.sync_user_booking_counts(session)
+        return result
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to sync booking counts: {str(e)}")
 
 
 @dashboard_router.post("/setup-storage")
