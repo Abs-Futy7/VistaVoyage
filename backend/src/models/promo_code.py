@@ -171,10 +171,6 @@ class PromoCode(SQLModel, table=True):
         if self.usage_limit is not None and self.used_count >= self.usage_limit:
             return False
             
-        # If linked to offer, check offer validity
-        if self.offer_id and self.offer:
-            return self.offer.is_valid
-            
         return True
     
     def increment_usage(self) -> None:

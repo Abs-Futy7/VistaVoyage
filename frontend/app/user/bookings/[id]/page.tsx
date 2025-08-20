@@ -195,7 +195,7 @@ export default function BookingDetailsPage({ params }: BookingDetailsPageProps) 
               </div>
               <div class="detail-row">
                 <span class="detail-label">Travelers:</span>
-                <span>1 person(s)</span>
+                <span>${booking.packagePrice ? Math.round((booking.total_amount + booking.discount_amount) / booking.packagePrice) : 1} person(s)</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Status:</span>
@@ -410,7 +410,11 @@ export default function BookingDetailsPage({ params }: BookingDetailsPageProps) 
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Number of Travelers</span>
-                <span className="font-medium">1 person</span>
+                <span className="font-medium">
+                  {booking.packagePrice ? 
+                    Math.round((booking.total_amount + booking.discount_amount) / booking.packagePrice) : 1
+                  } person(s)
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Booking Status</span>

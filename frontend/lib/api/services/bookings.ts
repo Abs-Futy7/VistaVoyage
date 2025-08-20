@@ -57,7 +57,7 @@ export interface PromoValidationRequest {
 }
 
 export interface PromoValidationResponse {
-  valid: boolean;
+  is_valid: boolean;
   promo_code_id?: string;
   discount_amount: number;
   discount_percentage?: number;

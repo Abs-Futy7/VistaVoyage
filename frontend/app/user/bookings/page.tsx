@@ -222,7 +222,7 @@ const generateInvoice = (booking: any) => {
           </div>
           <div class="detail-row">
             <span class="detail-label">Travelers:</span>
-            <span>${booking.number_of_travelers || 1} person(s)</span>
+            <span>${booking.packagePrice ? Math.round((booking.total_amount + booking.discount_amount) / booking.packagePrice) : 1} person(s)</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Status:</span>

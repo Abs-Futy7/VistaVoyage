@@ -63,7 +63,7 @@ export default function AdminPromoCodesPage() {
         console.log('Admin token preview:', adminToken.substring(0, 20) + '...');
       }
       
-      const response = await promoCodeService.getPromoCodes();
+      const response = await promoCodeService.getAdminPromoCodes();
       setPromoCodes(
         (response.promo_codes || []).map((promo: any) => ({
           ...promo,

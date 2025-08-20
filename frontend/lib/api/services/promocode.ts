@@ -41,6 +41,31 @@ export interface ValidatePromoCodeResponse {
 
 export const promoCodeService = {
   // Admin endpoints
+  async getAdminPromoCodes(): Promise<PromoCodeListResponse> {
+    try {
+      const response = await apiClient.get<any>(API_CONFIG.ENDPOINTS.ADMIN.PROMO_CODES);
+      
+      if (response.success && response.data) {
+        // Log for debugging
+        console.log('Admin promo codes response:', response.data);
+        console.log('Promo codes count:', response.data.promo_codes?.length || 0);
+        console.log('Active promo codes:', response.data.promo_codes?.filter((pc: any) => pc.is_active).length || 0);
+        console.log('Inactive promo codes:', response.data.promo_codes?.filter((pc: any) => !pc.is_active).length || 0);
+        
+        // Transform the admin API response to match the expected format
+        return {
+          promo_codes: response.data.promo_codes || [],
+          total_count: response.data.total || 0
+        };
+      }
+      
+      throw new Error('Failed to fetch admin promo codes');
+    } catch (error: any) {
+      console.error('Get admin promo codes error:', error);
+      throw error;
+    }
+  },
+
   async createPromoCode(data: Partial<PromoCode>): Promise<PromoCode> {
     try {
       // Remove unsupported fields before sending to backend

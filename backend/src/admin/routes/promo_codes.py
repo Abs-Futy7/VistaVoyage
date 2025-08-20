@@ -88,7 +88,7 @@ async def get_promo_codes(
         for pc in promo_codes:
             # Calculate remaining uses
             usage_count = pc.used_count or 0
-            limit_count = pc.usage_limit  # Remove reference to pc.max_usage
+            limit_count = pc.usage_limit
             remaining_uses = None if limit_count is None else max(0, limit_count - usage_count)
             
             # Check if valid
@@ -115,8 +115,6 @@ async def get_promo_codes(
                 "is_active": pc.is_active,
                 "created_at": pc.created_at,
                 "updated_at": pc.updated_at,
-                "offer_id": pc.offer_id,
-                # Removed 'max_usage'
                 "remaining_uses": remaining_uses,
                 "is_valid": is_valid,
                 "is_expired": current_date > pc.expiry_date
@@ -196,7 +194,7 @@ async def get_promo_code(
         # Calculate computed fields
         current_date = datetime.utcnow().date()
         usage_count = promo_code.used_count or 0
-        limit_count = promo_code.usage_limit  # Remove reference to promo_code.max_usage
+        limit_count = promo_code.usage_limit
         remaining_uses = None if limit_count is None else max(0, limit_count - usage_count)
         
         is_valid = (
@@ -221,8 +219,6 @@ async def get_promo_code(
             "is_active": promo_code.is_active,
             "created_at": promo_code.created_at,
             "updated_at": promo_code.updated_at,
-            "offer_id": promo_code.offer_id,
-            # Removed 'max_usage'
             "remaining_uses": remaining_uses,
             "is_valid": is_valid,
             "is_expired": current_date > promo_code.expiry_date
@@ -252,13 +248,13 @@ async def create_promo_code(
 
         # Create new promo code
         promo_code_dict = promo_code_data.model_dump()
-        # Set legacy fields for backward compatibility
-        # Removed 'max_usage'
         promo_code_dict['used_count'] = 0
+        
         # Set created_by from admin token
         admin_id = user.get("sub") or user.get("admin_id")
         if admin_id:
             promo_code_dict['created_by'] = admin_id
+            
         promo_code = PromoCode(**promo_code_dict)
 
         session.add(promo_code)
@@ -268,7 +264,7 @@ async def create_promo_code(
         # Calculate computed fields
         current_date = datetime.utcnow().date()
         usage_count = promo_code.used_count or 0
-        limit_count = promo_code.usage_limit  # Remove reference to promo_code.max_usage
+        limit_count = promo_code.usage_limit
         remaining_uses = None if limit_count is None else max(0, limit_count - usage_count)
 
         is_valid = (
@@ -293,8 +289,6 @@ async def create_promo_code(
             "is_active": promo_code.is_active,
             "created_at": promo_code.created_at,
             "updated_at": promo_code.updated_at,
-            "offer_id": promo_code.offer_id,
-            # Removed 'max_usage'
             "remaining_uses": remaining_uses,
             "is_valid": is_valid,
             "is_expired": current_date > promo_code.expiry_date
@@ -331,10 +325,6 @@ async def update_promo_code(
         
         for field, value in update_data.items():
             setattr(promo_code, field, value)
-            
-        # Keep legacy fields in sync
-        if 'usage_limit' in update_data:
-            promo_code.max_usage = update_data['usage_limit']
         
         await session.commit()
         await session.refresh(promo_code)
@@ -342,7 +332,7 @@ async def update_promo_code(
         # Calculate computed fields
         current_date = datetime.utcnow().date()
         usage_count = promo_code.used_count or 0
-        limit_count = promo_code.usage_limit  # Remove reference to promo_code.max_usage
+        limit_count = promo_code.usage_limit
         remaining_uses = None if limit_count is None else max(0, limit_count - usage_count)
         
         is_valid = (
@@ -367,8 +357,6 @@ async def update_promo_code(
             "is_active": promo_code.is_active,
             "created_at": promo_code.created_at,
             "updated_at": promo_code.updated_at,
-            "offer_id": promo_code.offer_id,
-            # Removed 'max_usage'
             "remaining_uses": remaining_uses,
             "is_valid": is_valid,
             "is_expired": current_date > promo_code.expiry_date
@@ -411,7 +399,7 @@ async def delete_promo_code(
         raise HTTPException(status_code=500, detail=f"Error deleting promo code: {str(e)}")
 
 
-@promo_codes_router.patch("/promo-codes/{promo_code_id}/toggle-status")
+@promo_codes_router.patch("/promo-codes/{promo_code_id}/toggle-status", response_model=PromoCodeResponseModel)
 async def toggle_promo_code_status(
     promo_code_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
@@ -435,7 +423,7 @@ async def toggle_promo_code_status(
         # Calculate computed fields
         current_date = datetime.utcnow().date()
         usage_count = promo_code.used_count or 0
-        limit_count = promo_code.usage_limit  # Remove reference to promo_code.max_usage
+        limit_count = promo_code.usage_limit
         remaining_uses = None if limit_count is None else max(0, limit_count - usage_count)
         
         is_valid = (
@@ -460,17 +448,12 @@ async def toggle_promo_code_status(
             "is_active": promo_code.is_active,
             "created_at": promo_code.created_at,
             "updated_at": promo_code.updated_at,
-            "offer_id": promo_code.offer_id,
-            # Removed 'max_usage'
             "remaining_uses": remaining_uses,
             "is_valid": is_valid,
             "is_expired": current_date > promo_code.expiry_date
         }
         
-        return {
-            "message": f"Promo code {'activated' if promo_code.is_active else 'deactivated'} successfully",
-            "promo_code": PromoCodeResponseModel(**pc_data)
-        }
+        return PromoCodeResponseModel(**pc_data)
         
     except HTTPException:
         raise
@@ -518,7 +501,7 @@ async def validate_promo_code(
         
         # Calculate remaining uses
         usage_count = promo_code.used_count or 0
-        limit_count = promo_code.usage_limit or promo_code.max_usage
+        limit_count = promo_code.usage_limit
         remaining_uses = None if limit_count is None else max(0, limit_count - usage_count)
         
         validation_result = {

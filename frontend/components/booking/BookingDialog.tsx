@@ -66,7 +66,7 @@ export function BookingDialog({
 
       if (response.success && response.data) {
         setPromoValidation(response.data);
-        if (response.data.valid) {
+        if (response.data.is_valid) {
           toast.success(`Promo code applied! You save TK ${response.data.discount_amount}`);
         } else {
           toast.error(response.data.message || 'Invalid promo code');
@@ -93,7 +93,7 @@ export function BookingDialog({
       const bookingData: CreateBookingRequest = {
         package_id: packageId,
         total_amount: finalAmount,
-        promo_code: formData.hasPromoCode && promoValidation?.valid ? formData.promoCode : undefined
+        promo_code: formData.hasPromoCode && promoValidation?.is_valid ? formData.promoCode : undefined
       };
 
       const response = await bookingService.createBooking(bookingData);
@@ -176,7 +176,7 @@ export function BookingDialog({
                 className="rounded"
               />
               <Label htmlFor="hasPromoCode">I have a promo code</Label>
-              {promoValidation?.valid && (
+              {promoValidation?.is_valid && (
                 <div className="flex items-center gap-1 text-green-600 text-sm">
                   <CheckCircle className="h-4 w-4" />
                   <span>Applied</span>
@@ -217,14 +217,14 @@ export function BookingDialog({
                 </div>
                 
                 {/* Validation Status */}
-                {promoValidation && promoValidation.valid && (
+                {promoValidation && promoValidation.is_valid && (
                   <div className="flex items-center gap-2 text-green-600 text-sm bg-green-50 p-2 rounded">
                     <CheckCircle className="h-4 w-4" />
-                    <span>Promo code applied! You save TK {promoValidation.discount_amount}</span>
+                    <span>{promoValidation.message || 'Promo code applied!'} You save TK {promoValidation.discount_amount}</span>
                   </div>
                 )}
                 
-                {promoValidation && !promoValidation.valid && (
+                {promoValidation && !promoValidation.is_valid && (
                   <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-2 rounded">
                     <AlertCircle className="h-4 w-4" />
                     <span>{promoValidation.message || 'Invalid promo code'}</span>
@@ -239,7 +239,7 @@ export function BookingDialog({
                 <span>Base Price ({formData.numberOfPeople} × TK {packagePrice})</span>
                 <span>${baseTotal}</span>
               </div>
-              {promoValidation?.valid && (
+              {promoValidation?.is_valid && (
                 <div className="flex justify-between text-green-600">
                   <span>Discount</span>
                   <span>-TK {promoValidation.discount_amount}</span>

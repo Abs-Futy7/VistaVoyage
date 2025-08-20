@@ -131,7 +131,7 @@ export const API_CONFIG = {
       PROMO_CODE_CREATE: '/api/v1/admin/promo-codes',
       PROMO_CODE_UPDATE: (id: string) => `/api/v1/admin/promo-codes/${id}`,
       PROMO_CODE_DELETE: (id: string) => `/api/v1/admin/promo-codes/${id}`,
-      PROMO_CODE_TOGGLE_ACTIVE: (id: string) => `/api/v1/admin/promo-codes/${id}/toggle-active`,
+      PROMO_CODE_TOGGLE_ACTIVE: (id: string) => `/api/v1/admin/promo-codes/${id}/toggle-status`,
       
       // Storage
       SETUP_STORAGE: '/api/v1/admin/setup-storage'
