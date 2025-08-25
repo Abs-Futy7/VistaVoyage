@@ -35,10 +35,7 @@ function Hero() {
               z-10
             "
           >
-            {/* Placeholder for 3D airplane - can be re-enabled when HMR issues are resolved */}
-            <div className="w-full h-full opacity-60">
-              ✈️
-            </div>
+            
           </div>
         </div>
         <p className="text-lg sm:text-2xl md:text-2xl mb-10 max-w-3xl mx-auto drop-shadow-md font-extralight">
